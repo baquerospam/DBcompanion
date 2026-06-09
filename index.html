@@ -2666,9 +2666,23 @@ window.importAll=function(input){
             const fileType=data.type||'full';
 
             // Importar referencias con previsualización
-            if(fileType==='references'&&data.references){
+            if((fileType==='references'||fileType==='referencias')&&data.references){
                 _refImportData=data.references;
-                showRefImportPreview(data.references);
+                // Asegurar que heroic existe
+                _refImportData.heroic=_refImportData.heroic||[];
+                if(Object.values(_refImportData).every(v=>!Array.isArray(v)||v.length===0)){
+                    showToast('⚠️ El archivo de referencias está vacío','warn');
+                    input.value='';return;
+                }
+                showRefImportPreview(_refImportData);
+                input.value='';
+                return;
+            }
+            // Si el archivo tiene referencias pero sin tipo explícito
+            if(!data.adventures&&!data.advs&&!data.creatures&&data.references){
+                _refImportData=data.references;
+                _refImportData.heroic=_refImportData.heroic||[];
+                showRefImportPreview(_refImportData);
                 input.value='';
                 return;
             }
