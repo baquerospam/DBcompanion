@@ -1,10 +1,11 @@
 const CACHE_NAME = 'campanyas-dragonbane-v1';
+const BASE = self.location.pathname.replace(/\/sw\.js$/, '');
 const ASSETS = [
-  '/',
-  '/index.html',
-  '/manifest.json',
-  '/icon-192.png',
-  '/icon-512.png'
+  BASE + '/',
+  BASE + '/index.html',
+  BASE + '/manifest.json',
+  BASE + '/icon-192.png',
+  BASE + '/icon-512.png'
 ];
 
 self.addEventListener('install', event => {
@@ -33,7 +34,7 @@ self.addEventListener('fetch', event => {
         const toCache = response.clone();
         caches.open(CACHE_NAME).then(cache => cache.put(event.request, toCache));
         return response;
-      }).catch(() => caches.match('/index.html'));
+      }).catch(() => caches.match(BASE + '/index.html'));
     })
   );
 });
