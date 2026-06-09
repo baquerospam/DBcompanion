@@ -1,11 +1,12 @@
-const CACHE_NAME = 'campanyas-dragonbane-v1';
-const BASE = self.location.pathname.replace(/\/sw\.js$/, '');
+const CACHE_NAME = 'dbcompanion-v1';
+const BASE = '/DBcompanion';
 const ASSETS = [
   BASE + '/',
   BASE + '/index.html',
   BASE + '/manifest.json',
   BASE + '/icon-192.png',
-  BASE + '/icon-512.png'
+  BASE + '/icon-512.png',
+  BASE + '/sw.js'
 ];
 
 self.addEventListener('install', event => {
