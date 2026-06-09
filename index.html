@@ -710,7 +710,7 @@
             <div id="splashSpinner"></div>
         </div>
     </div>
-    <div id="hamburgerDropdown" class="hamburger-dropdown"><button class="top-btn save-btn" onclick="saveAndNotify()">💾 Guardar</button><button class="top-btn" onclick="openAdvNotes()">📓 Notas de aventura</button><button class="top-btn" onclick="exportAdv(window.curId)">📤 Exportar esta aventura</button><button id="themeToggle" onclick="toggleTheme()">🌓 Modo claro/oscuro</button><button class="top-btn" onclick="toggleTopBar()">▲ Minimizar</button><button class="top-btn" onclick="toggleFullscreen()">⛶ Pantalla completa</button><button class="top-btn" onclick="changeDataFile()">📂 Cambiar archivo de datos</button><button class="top-btn" onclick="showMenu()">🏠 Menú principal</button><button class="top-btn" onclick="resetAdventure()" style="color:#ff6b6b;border-color:rgba(220,38,38,.4);">🔄 Reiniciar aventura</button></div>
+    <div id="hamburgerDropdown" class="hamburger-dropdown"><button class="top-btn save-btn" onclick="saveAndNotify()">💾 Guardar</button><button class="top-btn" onclick="openAdvNotes()">📓 Notas de aventura</button><button class="top-btn" onclick="exportAdv(window.curId)">📤 Exportar esta aventura</button><button id="themeToggle" onclick="toggleTheme()">🌓 Modo claro/oscuro</button><button class="top-btn" onclick="toggleTopBar()">▲ Minimizar</button><button class="top-btn" onclick="toggleFullscreen()">⛶ Pantalla completa</button><button id="btnChangeDataFile" class="top-btn" onclick="changeDataFile()">📂 Cambiar archivo de datos</button><button class="top-btn" onclick="showMenu()">🏠 Menú principal</button><button class="top-btn" onclick="resetAdventure()" style="color:#ff6b6b;border-color:rgba(220,38,38,.4);">🔄 Reiniciar aventura</button></div>
     <!-- MODAL DE PREVISUALIZACIÓN DE REFERENCIAS -->
     <div id="refImportModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:9998;align-items:center;justify-content:center;padding:20px;">
         <div style="background:var(--panel);border:1px solid var(--border);border-radius:14px;padding:20px;max-width:420px;width:100%;max-height:80vh;display:flex;flex-direction:column;gap:12px;">
@@ -1619,7 +1619,12 @@ window.deleteAdv=async function(id){if(confirm('¿Eliminar esta aventura?')){awa
 window.toggleSidebar=function(){document.getElementById('sidebar').classList.toggle('closed');document.getElementById('sidebar-toggle').textContent=document.getElementById('sidebar').classList.contains('closed')?'▶':'◀';};
 window.toggleTopBar=function(){const tb=document.querySelector('.top-bar');tb.classList.toggle('collapsed');document.getElementById('topbar-toggle').style.display=tb.classList.contains('collapsed')?'flex':'none';if(state.mode==='game')setTimeout(renderPcBar,50);};
 window.toggleFullscreen=function(){if(!document.fullscreenElement)document.documentElement.requestFullscreen().catch(()=>{});else document.exitFullscreen();};
-window.toggleHamburgerMenu=function(){document.getElementById('hamburgerDropdown').classList.toggle('open');};
+window.toggleHamburgerMenu=function(){
+    // Mostrar/ocultar botón de archivo según disponibilidad de FS API
+    const fsBtn=document.getElementById('btnChangeDataFile');
+    if(fsBtn)fsBtn.style.display=typeof window.showOpenFilePicker==='function'?'':'none';
+    document.getElementById('hamburgerDropdown').classList.toggle('open');
+};
 document.addEventListener('click',function(e){const hm=document.querySelector('.hamburger-menu');const dd=document.getElementById('hamburgerDropdown');if(hm&&dd&&!hm.contains(e.target))dd.classList.remove('open');});
 
 async function saveCurrent(){
@@ -3023,11 +3028,23 @@ renderPcBar();};
 
 (async function init(){try{
     await DB.open();
-    // Intentar cargar archivo de datos del disco
-    const fsLoaded = await FS.init();
-    if(!fsLoaded){
-        // No hay archivo configurado — mostrar pantalla de bienvenida
-        await showFsWelcome();
+    // Detectar si File System Access API está disponible (no en WebView Android ni iOS)
+    const fsApiAvailable = typeof window.showOpenFilePicker === 'function' &&
+                           typeof window.showSaveFilePicker === 'function';
+    if(fsApiAvailable){
+        // PC con soporte FS — intentar cargar archivo de datos del disco
+        const fsLoaded = await FS.init();
+        if(!fsLoaded){
+            await showFsWelcome();
+        }
+    } else {
+        // Móvil/WebView/iOS — usar IndexedDB directamente, sin preguntar
+        console.log('ℹ️ File System API no disponible — usando IndexedDB');
+        // Verificar si IndexedDB tiene datos o es primera vez
+        const existingAdvs = await DB.getAll('adventures') || [];
+        if(existingAdvs.length === 0){
+            showToast('💾 Datos guardados automáticamente en el dispositivo', 'info', 4000);
+        }
     }
     await loadAdvsCache();
     await loadCampaigns();
