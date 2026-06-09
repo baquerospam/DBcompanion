@@ -4186,8 +4186,7 @@ document.addEventListener('keydown', function(e){
 
 // ===== PWA: SERVICE WORKER =====
 if ('serviceWorker' in navigator) {
-    const swPath = location.pathname.replace(/\/[^/]*$/, '/sw.js');
-    navigator.serviceWorker.register(swPath)
+    navigator.serviceWorker.register('/DBcompanion/sw.js', {scope: '/DBcompanion/'})
         .then(() => console.log('✅ Service Worker registrado'))
         .catch(e => console.warn('SW no disponible:', e));
 }
