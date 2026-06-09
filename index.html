@@ -2709,7 +2709,7 @@ window.importAll=function(input){
             if(!Array.isArray(advs)||advs.length===0)throw new Error('Sin aventuras válidas');
             best=Array.isArray(best)?best:[];
             camps=Array.isArray(camps)?camps:[];
-            _importData={advs,best,campaigns:camps};
+            _importData={advs,best,campaigns:camps,refs:data.references||null};
             showImportPreview(advs,best);
             input.value='';
         }catch(err){
@@ -2758,13 +2758,14 @@ window.closeImportPreview=function(){
 };
 
 window.confirmImport=async function(){
-    if(!_importData)return;
+    if(!_importData){showToast('⚠️ No hay datos para importar','warn');return;}
     const checkboxes=[...document.querySelectorAll('#importPreviewList input[type=checkbox]')];
-    const selected=_importData.advs.filter((_,i)=>checkboxes[i]?.checked);
+    const advs=_importData.advs||[];
+    const selected=advs.filter((_,i)=>checkboxes[i]?.checked!==false);
     if(selected.length===0){showToast('⚠️ Selecciona al menos una aventura','warn');return;}
-    // Guardar datos ANTES de cerrar el modal (closeImportPreview pone _importData=null)
     const importCampaigns=Array.isArray(_importData.campaigns)?_importData.campaigns:[];
     const importBest=Array.isArray(_importData.best)?_importData.best:[];
+    const importRefs=_importData.refs||null;
     closeImportPreview();
     showToast('⏳ Importando...');
     try{
@@ -2772,7 +2773,9 @@ window.confirmImport=async function(){
             if(c?.id){await Store.put('campaigns',c);}
         }
         for(const adv of selected){
-            if(adv.campaignId===undefined) adv.campaignId=null;
+            if(!adv?.id||!adv?.name)continue;
+            if(adv.campaignId===undefined)adv.campaignId=null;
+            // Convertir mapa base64 a Blob si es necesario
             if(adv.map&&typeof adv.map==='string'&&adv.map.startsWith('data:')){
                 try{
                     const [header,b64]=adv.map.split(',');
@@ -2792,6 +2795,10 @@ window.confirmImport=async function(){
             if(!c?.id||!c?.name)continue;
             if(!c.id.startsWith('custom_'))c.id='custom_'+c.id;
             await Store.put('bestiary',c);
+        }
+        if(importRefs){
+            await Store.put('references',{id:'global',rules:importRefs.rules||[],equipment:importRefs.equipment||[],spells:importRefs.spells||[],heroic:importRefs.heroic||[]});
+            _references={rules:importRefs.rules||[],equipment:importRefs.equipment||[],spells:importRefs.spells||[],heroic:importRefs.heroic||[]};
         }
         invalidateBestiaryCache();
         await loadAdvsCache();
