@@ -710,7 +710,7 @@
             <div id="splashSpinner"></div>
         </div>
     </div>
-    <div id="hamburgerDropdown" class="hamburger-dropdown"><button class="top-btn save-btn" onclick="saveAndNotify()">💾 Guardar</button><button class="top-btn" onclick="openAdvNotes()">📓 Notas de aventura</button><button class="top-btn" onclick="exportAdv(window.curId)">📤 Exportar esta aventura</button><button id="themeToggle" onclick="toggleTheme()">🌓 Modo claro/oscuro</button><button class="top-btn" onclick="toggleTopBar()">▲ Minimizar</button><button class="top-btn" onclick="toggleFullscreen()">⛶ Pantalla completa</button><button class="top-btn" onclick="showMenu()">🏠 Menú principal</button><button class="top-btn" onclick="resetAdventure()" style="color:#ff6b6b;border-color:rgba(220,38,38,.4);">🔄 Reiniciar aventura</button></div>
+    <div id="hamburgerDropdown" class="hamburger-dropdown"><button class="top-btn save-btn" onclick="saveAndNotify()">💾 Guardar</button><button class="top-btn" onclick="openAdvNotes()">📓 Notas de aventura</button><button class="top-btn" onclick="exportAdv(window.curId)">📤 Exportar esta aventura</button><button id="themeToggle" onclick="toggleTheme()">🌓 Modo claro/oscuro</button><button class="top-btn" onclick="toggleTopBar()">▲ Minimizar</button><button class="top-btn" onclick="toggleFullscreen()">⛶ Pantalla completa</button><button class="top-btn" onclick="changeDataFile()">📂 Cambiar archivo de datos</button><button class="top-btn" onclick="showMenu()">🏠 Menú principal</button><button class="top-btn" onclick="resetAdventure()" style="color:#ff6b6b;border-color:rgba(220,38,38,.4);">🔄 Reiniciar aventura</button></div>
     <!-- MODAL DE PREVISUALIZACIÓN DE REFERENCIAS -->
     <div id="refImportModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:9998;align-items:center;justify-content:center;padding:20px;">
         <div style="background:var(--panel);border:1px solid var(--border);border-radius:14px;padding:20px;max-width:420px;width:100%;max-height:80vh;display:flex;flex-direction:column;gap:12px;">
@@ -878,19 +878,19 @@ let _campaigns = [];
 let _campaignCoverData = null; // null=no tocada, false=borrada, string=nueva
 
 async function loadCampaigns(){
-    try{ _campaigns = await DB.getAll('campaigns') || []; }
+    try{ _campaigns = await Store.getAll('campaigns') || []; }
     catch(e){ _campaigns = []; }
 }
 
 async function saveCampaignToDB(campaign){
-    await DB.put('campaigns', campaign);
+    await Store.put('campaigns', campaign);
     const i = _campaigns.findIndex(c => c.id === campaign.id);
     if(i >= 0) _campaigns[i] = campaign;
     else _campaigns.push(campaign);
 }
 
 async function deleteCampaignFromDB(id){
-    await DB.del('campaigns', id);
+    await Store.del('campaigns', id);
     _campaigns = _campaigns.filter(c => c.id !== id);
 }
 
@@ -1053,7 +1053,7 @@ window.deleteCurrentCampaign = async function(){
     // Desasociar aventuras
     for(const adv of window.advs.filter(a => a.campaignId === id)){
         adv.campaignId = null;
-        await DB.put('adventures', adv);
+        await Store.put('adventures', adv);
     }
     await deleteCampaignFromDB(id);
     closeCampaignModal();
@@ -1305,6 +1305,148 @@ async function getAll(store){const db=await ensure();return new Promise((resolve
 function getRawDb(){return _db;}
 return{open,ensure,get,put,del,getAll,getRawDb};})();
 
+// ===== SISTEMA DE PERSISTENCIA EN ARCHIVO (File System Access API) =====
+const FS = (() => {
+    let _fileHandle = null;
+    let _data = null; // caché en memoria
+    const STORES_KEYS = {adventures:'id',bestiary:'id',campaigns:'id',pcs:'id',pcStates:'key',combatStates:'advId',lightSources:'advId',shortEncounters:'advId',restMenus:'advId',designProgress:'advId',gameProgress:'advId',appSettings:'id',references:'id'};
+
+    function _emptyData(){
+        const d={};
+        Object.keys(STORES_KEYS).forEach(s=>d[s]=[]);
+        return d;
+    }
+
+    async function _readFile(){
+        if(!_fileHandle)return null;
+        try{
+            const file=await _fileHandle.getFile();
+            const text=await file.text();
+            return JSON.parse(text);
+        }catch(e){console.warn('FS: error leyendo archivo',e);return null;}
+    }
+
+    async function _writeFile(data){
+        if(!_fileHandle)return false;
+        try{
+            const writable=await _fileHandle.createWritable();
+            await writable.write(JSON.stringify(data));
+            await writable.close();
+            return true;
+        }catch(e){console.warn('FS: error escribiendo archivo',e);return false;}
+    }
+
+    async function init(){
+        // Intentar recuperar handle guardado en IndexedDB (persiste entre sesiones)
+        try{
+            const saved=await Store.get('appSettings','fsHandle');
+            if(saved?.value){
+                _fileHandle=saved.value;
+                // Verificar permisos
+                const perm=await _fileHandle.queryPermission({mode:'readwrite'});
+                if(perm==='granted'){
+                    _data=await _readFile()||_emptyData();
+                    console.log('✅ Archivo de datos cargado:', _fileHandle.name);
+                    return true;
+                }else{
+                    // Pedir permisos al usuario
+                    const granted=await _fileHandle.requestPermission({mode:'readwrite'});
+                    if(granted==='granted'){
+                        _data=await _readFile()||_emptyData();
+                        return true;
+                    }
+                }
+            }
+        }catch(e){}
+        return false;
+    }
+
+    async function chooseFile(){
+        try{
+            // Intentar abrir archivo existente
+            const [handle]=await window.showOpenFilePicker({
+                types:[{description:'Datos Campañas Dragonbane',accept:{'application/json':['.json']}}],
+                multiple:false
+            });
+            _fileHandle=handle;
+            await Store.put('appSettings',{id:'fsHandle',value:_fileHandle});
+            _data=await _readFile()||_emptyData();
+            console.log('✅ Archivo existente cargado');
+            return true;
+        }catch(e){
+            if(e.name==='AbortError')return false;
+            console.warn('FS chooseFile error:',e);
+            return false;
+        }
+    }
+
+    async function createFile(){
+        try{
+            const handle=await window.showSaveFilePicker({
+                suggestedName:'campanyas-dragonbane.json',
+                types:[{description:'Datos Campañas Dragonbane',accept:{'application/json':['.json']}}]
+            });
+            _fileHandle=handle;
+            await Store.put('appSettings',{id:'fsHandle',value:_fileHandle});
+            _data=_emptyData();
+            await _writeFile(_data);
+            console.log('✅ Nuevo archivo de datos creado');
+            return true;
+        }catch(e){
+            if(e.name==='AbortError')return false;
+            console.warn('FS createFile error:',e);
+            return false;
+        }
+    }
+
+    function isReady(){return !!_fileHandle&&!!_data;}
+
+    function _keyFor(store){return STORES_KEYS[store]||'id';}
+
+    async function get(store,key){
+        if(!_data||!_data[store])return undefined;
+        return _data[store].find(x=>x[_keyFor(store)]===key);
+    }
+
+    async function put(store,value){
+        if(!_data)_data=_emptyData();
+        if(!_data[store])_data[store]=[];
+        const key=_keyFor(store);
+        const idx=_data[store].findIndex(x=>x[key]===value[key]);
+        if(idx>=0)_data[store][idx]=value; else _data[store].push(value);
+        await _writeFile(_data);
+    }
+
+    async function del(store,key){
+        if(!_data||!_data[store])return;
+        const k=_keyFor(store);
+        _data[store]=_data[store].filter(x=>x[k]!==key);
+        await _writeFile(_data);
+    }
+
+    async function getAll(store){
+        if(!_data||!_data[store])return[];
+        return[..._data[store]];
+    }
+
+    async function replaceAll(data){
+        _data=data;
+        return await _writeFile(_data);
+    }
+
+    function getData(){return _data;}
+
+    return{init,chooseFile,createFile,isReady,get,put,del,getAll,replaceAll,getData};
+})();
+
+// ===== CAPA DE ABSTRACCIÓN: usa FS si está disponible, si no IndexedDB =====
+const Store = {
+    get:    async(s,k)=>FS.isReady()?FS.get(s,k):DB.get(s,k),
+    put:    async(s,v)=>FS.isReady()?FS.put(s,v):DB.put(s,v),
+    del:    async(s,k)=>FS.isReady()?FS.del(s,k):DB.del(s,k),
+    getAll: async(s)=>FS.isReady()?FS.getAll(s):DB.getAll(s),
+};
+
 // ===== ESTADO CENTRAL =====
 const state = {
     advs: [],
@@ -1347,8 +1489,8 @@ const defaultBestiary=[];
 let _bestiaryCache = null;
 function invalidateBestiaryCache() { _bestiaryCache = null; }
 
-window.toggleTheme=async function(){currentTheme=currentTheme==='dark'?'light':'dark';document.documentElement.setAttribute('data-theme',currentTheme);document.getElementById('themeToggle').textContent=currentTheme==='dark'?'☀️ Modo claro':'🌙 Modo oscuro';await DB.put('appSettings',{id:'theme',value:currentTheme});};
-async function loadTheme(){try{const s=await DB.get('appSettings','theme');if(s&&s.value)currentTheme=s.value;}catch(e){}document.documentElement.setAttribute('data-theme',currentTheme);document.getElementById('themeToggle').textContent=currentTheme==='dark'?'☀️ Modo claro':'🌙 Modo oscuro';}
+window.toggleTheme=async function(){currentTheme=currentTheme==='dark'?'light':'dark';document.documentElement.setAttribute('data-theme',currentTheme);document.getElementById('themeToggle').textContent=currentTheme==='dark'?'☀️ Modo claro':'🌙 Modo oscuro';await Store.put('appSettings',{id:'theme',value:currentTheme});};
+async function loadTheme(){try{const s=await Store.get('appSettings','theme');if(s&&s.value)currentTheme=s.value;}catch(e){}document.documentElement.setAttribute('data-theme',currentTheme);document.getElementById('themeToggle').textContent=currentTheme==='dark'?'☀️ Modo claro':'🌙 Modo oscuro';}
 
 let preventNavigation=true;
 let navigationConfirmed=false;
@@ -1374,9 +1516,9 @@ window.addEventListener('beforeunload',function(e){
 });
 window.addEventListener('popstate',function(e){if(shouldPreventExit()){if(confirm('¿Seguro que quieres salir de DJ Mapas Dragonbane?')){preventNavigation=false;navigationConfirmed=true;setTimeout(function(){window.history.back();},50);}else{window.history.pushState({preventExit:true},'',window.location.href);}}else{window.history.pushState({preventExit:true},'',window.location.href);}});
 
-async function loadAdvsCache(){try{window.advs=await DB.getAll('adventures')||[];}catch(e){window.advs=[];}}
-async function saveAdvToDB(adv){if(!adv||!adv.id)return;try{await DB.put('adventures',adv);const i=window.advs.findIndex(a=>a.id===adv.id);if(i>=0)window.advs[i]=adv;else window.advs.push(adv);}catch(e){alert('Error al guardar');}}
-async function deleteAdvFromDB(id){try{await DB.del('adventures',id);window.advs=window.advs.filter(a=>a.id!==id);for(const s of['combatStates','lightSources','shortEncounters','restMenus','designProgress','gameProgress']){await DB.del(s,id);}}catch(e){}}
+async function loadAdvsCache(){try{window.advs=await Store.getAll('adventures')||[];}catch(e){window.advs=[];}}
+async function saveAdvToDB(adv){if(!adv||!adv.id)return;try{await Store.put('adventures',adv);const i=window.advs.findIndex(a=>a.id===adv.id);if(i>=0)window.advs[i]=adv;else window.advs.push(adv);}catch(e){alert('Error al guardar');}}
+async function deleteAdvFromDB(id){try{await Store.del('adventures',id);window.advs=window.advs.filter(a=>a.id!==id);for(const s of['combatStates','lightSources','shortEncounters','restMenus','designProgress','gameProgress']){await Store.del(s,id);}}catch(e){}}
 
 window.showMenu=async function(){
     if(window.curId&&hasPendingChanges){
@@ -1486,13 +1628,13 @@ async function saveCurrent(){
     if(!adv)return;
     // Proteger el mapa: si se ha perdido de memoria, recuperarlo de DB
     if(!adv.map){
-        try{const fresh=await DB.get('adventures',window.curId);if(fresh?.map){adv.map=fresh.map;adv.mapType=fresh.mapType;}}catch(e){}
+        try{const fresh=await Store.get('adventures',window.curId);if(fresh?.map){adv.map=fresh.map;adv.mapType=fresh.mapType;}}catch(e){}
     }
     adv.rooms=window.rooms;
     adv.tables=currentTables;
     try{
-        adv.designProgress=(await DB.get('designProgress',window.curId))?.value||adv.designProgress||'pending';
-        adv.gameProgress=(await DB.get('gameProgress',window.curId))?.value||adv.gameProgress||'pending';
+        adv.designProgress=(await Store.get('designProgress',window.curId))?.value||adv.designProgress||'pending';
+        adv.gameProgress=(await Store.get('gameProgress',window.curId))?.value||adv.gameProgress||'pending';
     }catch(e){}
     await saveAdvToDB(adv);
 }
@@ -1570,7 +1712,7 @@ function showToast(msg, type='info', duration=2200){
 async function getBestiaryDB(campaignId){
     if(_bestiaryCache && campaignId===undefined)return _bestiaryCache;
     try{
-        const c=await DB.getAll('bestiary')||[];
+        const c=await Store.getAll('bestiary')||[];
         const all=[...defaultBestiary,...c];
         if(campaignId===undefined){
             _bestiaryCache=all;
@@ -1584,8 +1726,8 @@ async function getBestiaryDB(campaignId){
         });
     }catch(e){return[...defaultBestiary];}
 }
-async function saveCustomCreature(creature){try{await DB.put('bestiary',creature);invalidateBestiaryCache();return true;}catch(e){alert('Error');return false;}}
-async function deleteCustomCreature(id){if(!confirm('¿Eliminar?'))return;try{await DB.del('bestiary',id);invalidateBestiaryCache();renderBestiaryList(currentFilter||'all');}catch(e){}}
+async function saveCustomCreature(creature){try{await Store.put('bestiary',creature);invalidateBestiaryCache();return true;}catch(e){alert('Error');return false;}}
+async function deleteCustomCreature(id){if(!confirm('¿Eliminar?'))return;try{await Store.del('bestiary',id);invalidateBestiaryCache();renderBestiaryList(currentFilter||'all');}catch(e){}}
 let currentFilter='all';
 window.openBestiary=async function(){preventNavigation=true;navigationConfirmed=false;await loadCampaigns();document.getElementById('mainMenu').classList.add('hidden');document.getElementById('bestiaryPanel').classList.add('open');// Poblar filtro de campaña
 const sel=document.getElementById('bestiaryFilterCampaign');if(sel){sel.innerHTML='<option value="">🌍 Todas las campañas</option><option value="__global__">🌍 Solo globales</option>'+_campaigns.map(c=>`<option value="${c.id}">📖 ${escapeHtml(c.name)}</option>`).join('');}
@@ -1665,7 +1807,7 @@ window.clearCreatureImage=function(){
 
 window.exportBestiary=async function(){
     try{
-        const all=await DB.getAll('bestiary')||[];
+        const all=await Store.getAll('bestiary')||[];
         if(all.length===0)return showToast('⚠️ No hay criaturas custom que exportar','warn');
         const data={version:1,type:'bestiary',creatures:all};
         const blob=new Blob([JSON.stringify(data)],{type:'application/json'});
@@ -1737,7 +1879,7 @@ function showBestiaryImportPreview(creatures,input){
             if(!c?.id||!c?.name)continue;
             if(!c.id.startsWith('custom_'))c.id='custom_'+c.id;
             if(mode==='merge'&&existingNames.has(c.name.toLowerCase()))continue;
-            await DB.put('bestiary',c);
+            await Store.put('bestiary',c);
             imported++;
         }
         invalidateBestiaryCache();
@@ -2429,12 +2571,12 @@ window.exportAll=async function(){try{
     showToast('⏳ Preparando exportación...');
     const serialized=[];
     for(const adv of window.advs){
-        adv.designProgress=(await DB.get('designProgress',adv.id))?.value||'pending';
-        adv.gameProgress=(await DB.get('gameProgress',adv.id))?.value||'pending';
+        adv.designProgress=(await Store.get('designProgress',adv.id))?.value||'pending';
+        adv.gameProgress=(await Store.get('gameProgress',adv.id))?.value||'pending';
         serialized.push(await serializeAdv(adv));
     }
-    const refs=await DB.get('references','global')||{rules:[],equipment:[],spells:[]};
-    const data={version:3,type:'full',adventures:serialized,bestiary:await DB.getAll('bestiary')||[],references:refs,campaigns:_campaigns};
+    const refs=await Store.get('references','global')||{rules:[],equipment:[],spells:[]};
+    const data={version:3,type:'full',adventures:serialized,bestiary:await Store.getAll('bestiary')||[],references:refs,campaigns:_campaigns};
     const blob=new Blob([JSON.stringify(data)],{type:'application/json'});
     const a=document.createElement('a');
     a.href=URL.createObjectURL(blob);
@@ -2448,8 +2590,8 @@ window.exportAdvsSolo=async function(){try{
     showToast('⏳ Exportando aventuras...');
     const serialized=[];
     for(const adv of window.advs){
-        adv.designProgress=(await DB.get('designProgress',adv.id))?.value||'pending';
-        adv.gameProgress=(await DB.get('gameProgress',adv.id))?.value||'pending';
+        adv.designProgress=(await Store.get('designProgress',adv.id))?.value||'pending';
+        adv.gameProgress=(await Store.get('gameProgress',adv.id))?.value||'pending';
         serialized.push(await serializeAdv(adv));
     }
     const data={version:3,type:'adventures',adventures:serialized};
@@ -2463,7 +2605,7 @@ window.exportAdvsSolo=async function(){try{
 }catch(err){showToast('❌ Error al exportar','error');}};
 
 window.exportReferencesSolo=async function(){try{
-    const refs=await DB.get('references','global')||{rules:[],equipment:[],spells:[]};
+    const refs=await Store.get('references','global')||{rules:[],equipment:[],spells:[]};
     const total=(refs.rules||[]).length+(refs.equipment||[]).length+(refs.spells||[]).length;
     if(total===0)return showToast('⚠️ No hay referencias que exportar','warn');
     const data={version:3,type:'references',references:refs};
@@ -2480,8 +2622,8 @@ window.exportAdv=async function(id){
     try{
         const adv=window.advs.find(a=>a.id===id);
         if(!adv)return showToast('❌ Aventura no encontrada','error');
-        adv.designProgress=(await DB.get('designProgress',id))?.value||'pending';
-        adv.gameProgress=(await DB.get('gameProgress',id))?.value||'pending';
+        adv.designProgress=(await Store.get('designProgress',id))?.value||'pending';
+        adv.gameProgress=(await Store.get('gameProgress',id))?.value||'pending';
         showToast('⏳ Preparando exportación...');
         const serialized=await serializeAdv(adv);
         const data={version:3,type:'adventures',adventures:[serialized]};
@@ -2530,7 +2672,7 @@ window.importAll=function(input){
             if(fileType==='bestiary'||(data.creatures&&!data.adventures)){
                 const creatures=data.creatures||data.bestiary||[];
                 let imported=0;
-                for(const c of creatures){if(!c?.id||!c?.name)continue;if(!c.id.startsWith('custom_'))c.id='custom_'+c.id;await DB.put('bestiary',c);imported++;}
+                for(const c of creatures){if(!c?.id||!c?.name)continue;if(!c.id.startsWith('custom_'))c.id='custom_'+c.id;await Store.put('bestiary',c);imported++;}
                 invalidateBestiaryCache();input.value='';
                 showToast('✅ Bestiario importado ('+imported+' criaturas)');
                 return;
@@ -2554,7 +2696,7 @@ window.importAll=function(input){
             try{
             if(data.references){
                 const refs=data.references;
-                await DB.put('references',{id:'global',rules:refs.rules||[],equipment:refs.equipment||[],spells:refs.spells||[],heroic:refs.heroic||[]});
+                await Store.put('references',{id:'global',rules:refs.rules||[],equipment:refs.equipment||[],spells:refs.spells||[],heroic:refs.heroic||[]});
                 _references={rules:refs.rules||[],equipment:refs.equipment||[],spells:refs.spells||[],heroic:refs.heroic||[]};
             }
             }catch(refErr){console.warn('Error importando referencias:',refErr);}
@@ -2622,7 +2764,7 @@ window.confirmImport=async function(){
     showToast('⏳ Importando...');
     try{
         for(const c of importCampaigns){
-            if(c?.id){await DB.put('campaigns',c);}
+            if(c?.id){await Store.put('campaigns',c);}
         }
         for(const adv of selected){
             if(adv.campaignId===undefined) adv.campaignId=null;
@@ -2637,27 +2779,28 @@ window.confirmImport=async function(){
                     adv.mapType='file';
                 }catch(e){console.warn('Map conversion failed:',e);}
             }
-            await DB.put('adventures',{...adv,rooms:adv.rooms||[],tables:adv.tables||defaultTables()});
-            if(adv.designProgress)await DB.put('designProgress',{advId:adv.id,value:adv.designProgress});
-            if(adv.gameProgress)await DB.put('gameProgress',{advId:adv.id,value:adv.gameProgress});
+            await Store.put('adventures',{...adv,rooms:adv.rooms||[],tables:adv.tables||defaultTables()});
+            if(adv.designProgress)await Store.put('designProgress',{advId:adv.id,value:adv.designProgress});
+            if(adv.gameProgress)await Store.put('gameProgress',{advId:adv.id,value:adv.gameProgress});
         }
         for(const c of importBest){
             if(!c?.id||!c?.name)continue;
             if(!c.id.startsWith('custom_'))c.id='custom_'+c.id;
-            await DB.put('bestiary',c);
+            await Store.put('bestiary',c);
         }
         invalidateBestiaryCache();
         await loadAdvsCache();
+        await loadCampaigns();
         showToast('✅ '+selected.length+' aventura/s importadas');
-        setTimeout(()=>window.location.reload(),800);
+        renderAdvList();
     }catch(err){
         console.error('confirmImport error:',err);
         showToast('❌ Error: '+err.message,'error',5000);
     }
 };
 
-async function getCombatState(){if(!window.curId)return{enemies:[]};try{return await DB.get('combatStates',window.curId)||{enemies:[]};}catch(e){return{enemies:[]};}}
-async function _origSaveCombatState(combatData){if(!window.curId)return;await DB.put('combatStates',{advId:window.curId,...combatData});}
+async function getCombatState(){if(!window.curId)return{enemies:[]};try{return await Store.get('combatStates',window.curId)||{enemies:[]};}catch(e){return{enemies:[]};}}
+async function _origSaveCombatState(combatData){if(!window.curId)return;await Store.put('combatStates',{advId:window.curId,...combatData});}
 window.openCombatPanel=function(){if(window.mode!=='game')return;document.getElementById('combatPanel').classList.add('open');renderCombatTags();};
 
 window.openCombatFromRoom=async function(){
@@ -2777,10 +2920,10 @@ document.addEventListener('click',function(e){const modal=document.getElementByI
 
 const LIGHT_CONFIG={torch:{dice:6,name:'Antorcha'},lamp:{dice:6,name:'Lámpara'},lantern:{dice:8,name:'Linterna'},candle:{dice:4,name:'Vela'}};
 const PHYSICAL_LIGHTS=['torch','lamp','lantern','candle'];
-async function getLightState(){if(!window.curId)return{};try{return await DB.get('lightSources',window.curId)||{};}catch(e){return{};}}
-async function _origSaveLightState(state){if(!window.curId)return;await DB.put('lightSources',{advId:window.curId,...state});}
-async function getCurrentTramo(){if(!window.curId)return 0;try{return(await DB.get('shortEncounters',window.curId))?.value||0;}catch(e){return 0;}}
-async function _origSetCurrentTramo(value){if(!window.curId)return;await DB.put('shortEncounters',{advId:window.curId,value});}
+async function getLightState(){if(!window.curId)return{};try{return await Store.get('lightSources',window.curId)||{};}catch(e){return{};}}
+async function _origSaveLightState(state){if(!window.curId)return;await Store.put('lightSources',{advId:window.curId,...state});}
+async function getCurrentTramo(){if(!window.curId)return 0;try{return(await Store.get('shortEncounters',window.curId))?.value||0;}catch(e){return 0;}}
+async function _origSetCurrentTramo(value){if(!window.curId)return;await Store.put('shortEncounters',{advId:window.curId,value});}
 
 // Lee luz y tramo en paralelo (una sola ronda de I/O)
 async function getLightAndTramo(){
@@ -2831,20 +2974,20 @@ async function updateShortEncounterDisplay(value){
 }
 var restMenuLoaded=false;
 window.openRestMenu=function(){if(window.mode!=='game')return;document.getElementById('restMenuPanel').classList.add('open');if(!restMenuLoaded){loadRestMenuUI();restMenuLoaded=true;}};
-window.loadRestMenuUI=async function(){var c=document.getElementById('restMenuRows');c.innerHTML='';var rests=[];try{var d=await DB.get('restMenus',window.curId);if(d&&d.rows&&d.rows.length>0){rests=d.rows;}}catch(e){}if(rests.length===0){addRestRowUI();}else{rests.forEach(function(r){addRestRowUI(r);});}};
+window.loadRestMenuUI=async function(){var c=document.getElementById('restMenuRows');c.innerHTML='';var rests=[];try{var d=await Store.get('restMenus',window.curId);if(d&&d.rows&&d.rows.length>0){rests=d.rows;}}catch(e){}if(rests.length===0){addRestRowUI();}else{rests.forEach(function(r){addRestRowUI(r);});}};
 window.addRestRowUI=function(data={name:'',ronda:false,corto:false}){const c=document.getElementById('restMenuRows');const row=document.createElement('div');row.style.cssText='display:grid;grid-template-columns:1fr 40px 40px 80px;gap:8px;align-items:center;margin-bottom:8px;';row.innerHTML=`<input type="text" class="rest-name" maxlength="10" value="${escapeHtml(data.name)}" style="width:100%;padding:8px;background:#1e1e1e;border:1px solid #333;color:#fff;border-radius:4px;"><input type="checkbox" class="rest-ronda" ${data.ronda?'checked':''} style="width:20px;height:20px;margin:auto;"><input type="checkbox" class="rest-corto" ${data.corto?'checked':''} style="width:20px;height:20px;margin:auto;"><div style="display:flex;gap:4px;"><button class="top-btn" style="flex:1;min-width:auto;padding:4px;" onclick="addRestRowUI()">+</button><button class="top-btn" style="flex:1;min-width:auto;padding:4px;background:#b91c1c;color:white;" onclick="removeRestRow(this)">-</button></div>`;c.appendChild(row);};
 window.removeRestRow=function(btn){var row=btn.parentElement.parentElement;var c=document.getElementById('restMenuRows');var rows=c.querySelectorAll('div');if(rows.length===1){row.querySelector('.rest-name').value='';row.querySelector('.rest-ronda').checked=false;row.querySelector('.rest-corto').checked=false;}else{if(confirm('¿Eliminar fila?'))row.remove();}};
-window.saveRestMenu=async function(){var rows=document.querySelectorAll('#restMenuRows > div');var data=[];rows.forEach(function(r){var name=r.querySelector('.rest-name');var ronda=r.querySelector('.rest-ronda');var corto=r.querySelector('.rest-corto');if(name&&ronda&&corto){data.push({name:name.value.trim(),ronda:ronda.checked,corto:corto.checked});}});await DB.put('restMenus',{advId:window.curId,rows:data});closePanel('restMenuPanel');showToast('✅ Descansos guardados');};
+window.saveRestMenu=async function(){var rows=document.querySelectorAll('#restMenuRows > div');var data=[];rows.forEach(function(r){var name=r.querySelector('.rest-name');var ronda=r.querySelector('.rest-ronda');var corto=r.querySelector('.rest-corto');if(name&&ronda&&corto){data.push({name:name.value.trim(),ronda:ronda.checked,corto:corto.checked});}});await Store.put('restMenus',{advId:window.curId,rows:data});closePanel('restMenuPanel');showToast('✅ Descansos guardados');};
 
-window.setDesignProgress=async function(s){if(!window.curId)return;await DB.put('designProgress',{advId:window.curId,value:s});updateDesignProgressUI();await saveCurrent();};
-async function updateDesignProgressUI(){if(!window.curId)return;const d=await DB.get('designProgress',window.curId);const s=d?.value||'pending';const bi=document.getElementById('btn-prog-ingreso'),bd=document.getElementById('btn-prog-done');if(!bi||!bd)return;bi.style.opacity='0.5';bi.style.border='none';bd.style.opacity='0.5';bd.style.border='none';if(s==='ingreso'){bi.style.opacity='1';bi.style.border='2px solid white';}else if(s==='done'){bd.style.opacity='1';bd.style.border='2px solid white';}}
-window.setGameProgress=async function(s){if(!window.curId)return;const d=await DB.get('gameProgress',window.curId);const ns=(d?.value===s)?'pending':s;await DB.put('gameProgress',{advId:window.curId,value:ns});updateGameProgressUI();await saveCurrent();};
-async function updateGameProgressUI(){if(!window.curId)return;const d=await DB.get('gameProgress',window.curId);const s=d?.value||'pending';['btn-game-exploring','btn-game-finished','btn-game-complete'].forEach(id=>{const b=document.getElementById(id);if(b){b.style.opacity='0.5';b.style.border='none';}});if(s==='exploring'){const b=document.getElementById('btn-game-exploring');if(b){b.style.opacity='1';b.style.border='2px solid white';}}else if(s==='finished'){const b=document.getElementById('btn-game-finished');if(b){b.style.opacity='1';b.style.border='2px solid white';}}else if(s==='complete'){const b=document.getElementById('btn-game-complete');if(b){b.style.opacity='1';b.style.border='2px solid white';}}}
+window.setDesignProgress=async function(s){if(!window.curId)return;await Store.put('designProgress',{advId:window.curId,value:s});updateDesignProgressUI();await saveCurrent();};
+async function updateDesignProgressUI(){if(!window.curId)return;const d=await Store.get('designProgress',window.curId);const s=d?.value||'pending';const bi=document.getElementById('btn-prog-ingreso'),bd=document.getElementById('btn-prog-done');if(!bi||!bd)return;bi.style.opacity='0.5';bi.style.border='none';bd.style.opacity='0.5';bd.style.border='none';if(s==='ingreso'){bi.style.opacity='1';bi.style.border='2px solid white';}else if(s==='done'){bd.style.opacity='1';bd.style.border='2px solid white';}}
+window.setGameProgress=async function(s){if(!window.curId)return;const d=await Store.get('gameProgress',window.curId);const ns=(d?.value===s)?'pending':s;await Store.put('gameProgress',{advId:window.curId,value:ns});updateGameProgressUI();await saveCurrent();};
+async function updateGameProgressUI(){if(!window.curId)return;const d=await Store.get('gameProgress',window.curId);const s=d?.value||'pending';['btn-game-exploring','btn-game-finished','btn-game-complete'].forEach(id=>{const b=document.getElementById(id);if(b){b.style.opacity='0.5';b.style.border='none';}});if(s==='exploring'){const b=document.getElementById('btn-game-exploring');if(b){b.style.opacity='1';b.style.border='2px solid white';}}else if(s==='finished'){const b=document.getElementById('btn-game-finished');if(b){b.style.opacity='1';b.style.border='2px solid white';}}else if(s==='complete'){const b=document.getElementById('btn-game-complete');if(b){b.style.opacity='1';b.style.border='2px solid white';}}}
 
 window.loadAdv=async function(id){
     // Leer siempre fresco de IndexedDB para evitar datos obsoletos en memoria
     let adv=null;
-    try{ adv=await DB.get('adventures',id); }catch(e){}
+    try{ adv=await Store.get('adventures',id); }catch(e){}
     if(!adv)adv=window.advs.find(a=>a.id===id);
     if(!adv)return;
     // Sincronizar en memoria
@@ -2880,19 +3023,78 @@ renderPcBar();};
 
 (async function init(){try{
     await DB.open();
+    // Intentar cargar archivo de datos del disco
+    const fsLoaded = await FS.init();
+    if(!fsLoaded){
+        // No hay archivo configurado — mostrar pantalla de bienvenida
+        await showFsWelcome();
+    }
     await loadAdvsCache();
     await loadCampaigns();
-    // Migración solo si hay datos que migrar, con protección
     try{ await migrateLegacyData(); }catch(me){ console.error('Migration error (non-fatal):', me); }
     await loadTheme();
     console.log('✅ Listo. Aventuras:',window.advs.length,'Campañas:',_campaigns.length);
 }catch(e){
     console.error('Init error:',e);
-    // No mostrar alert que bloquea — mostrar en UI
     document.getElementById('splashScreen')?.remove();
     document.getElementById('mainMenu')?.classList.remove('hidden');
     showToast('⚠️ Error de almacenamiento: '+e.message, 'error', 8000);
 }})();
+
+async function showFsWelcome(){
+    return new Promise(resolve=>{
+        const overlay=document.createElement('div');
+        overlay.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,0.97);z-index:99999;display:flex;align-items:center;justify-content:center;padding:20px;';
+        overlay.innerHTML=`
+        <div style="background:var(--panel);border:2px solid var(--acc);border-radius:16px;padding:28px;max-width:380px;width:100%;text-align:center;">
+            <div style="font-size:48px;margin-bottom:12px;">🗺️</div>
+            <h2 style="color:var(--acc);margin:0 0 8px;">Campañas Dragonbane</h2>
+            <p style="color:var(--txt-secondary);font-size:13px;margin:0 0 24px;line-height:1.6;">Para que tus datos se guarden <strong style="color:var(--txt)">en tu disco</strong> y no se pierdan al cerrar el navegador, necesitas elegir dónde guardar.</p>
+            <div style="display:flex;flex-direction:column;gap:10px;">
+                <button id="fsNew" style="padding:14px;background:var(--acc);color:#000;border:none;border-radius:10px;cursor:pointer;font-weight:700;font-size:15px;">📄 Crear nuevo archivo de datos</button>
+                <button id="fsOpen" style="padding:14px;background:transparent;border:1px solid var(--acc);color:var(--acc);border-radius:10px;cursor:pointer;font-weight:600;font-size:14px;">📂 Abrir archivo existente</button>
+                <button id="fsSkip" style="padding:10px;background:transparent;border:none;color:var(--txt-secondary);cursor:pointer;font-size:12px;">Continuar sin guardar en disco (los datos se perderán al cerrar)</button>
+            </div>
+        </div>`;
+        document.body.appendChild(overlay);
+        document.getElementById('fsNew').addEventListener('click',async()=>{
+            const ok=await FS.createFile();
+            document.body.removeChild(overlay);
+            if(ok)showToast('✅ Archivo de datos creado. Tus datos se guardarán automáticamente.');
+            resolve();
+        });
+        document.getElementById('fsOpen').addEventListener('click',async()=>{
+            const ok=await FS.chooseFile();
+            document.body.removeChild(overlay);
+            if(ok)showToast('✅ Archivo cargado. Continuando con tus datos guardados.');
+            resolve();
+        });
+        document.getElementById('fsSkip').addEventListener('click',()=>{
+            document.body.removeChild(overlay);
+            showToast('⚠️ Modo sin persistencia: los datos se perderán al cerrar.','warn',5000);
+            resolve();
+        });
+    });
+}
+
+window.changeDataFile=async function(){
+    const overlay=document.createElement('div');
+    overlay.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,0.9);z-index:99999;display:flex;align-items:center;justify-content:center;padding:20px;';
+    overlay.innerHTML=`
+    <div style="background:var(--panel);border:2px solid var(--acc);border-radius:16px;padding:24px;max-width:340px;width:100%;text-align:center;">
+        <h3 style="color:var(--acc);margin:0 0 16px;">📂 Archivo de datos</h3>
+        <div style="display:flex;flex-direction:column;gap:10px;">
+            <button id="cdfNew" style="padding:12px;background:var(--acc);color:#000;border:none;border-radius:8px;cursor:pointer;font-weight:700;">📄 Crear nuevo archivo</button>
+            <button id="cdfOpen" style="padding:12px;background:transparent;border:1px solid var(--acc);color:var(--acc);border-radius:8px;cursor:pointer;font-weight:600;">📂 Abrir archivo existente</button>
+            <button id="cdfCancel" style="padding:10px;background:transparent;border:none;color:var(--txt-secondary);cursor:pointer;">Cancelar</button>
+        </div>
+    </div>`;
+    document.body.appendChild(overlay);
+    const close=()=>document.body.removeChild(overlay);
+    document.getElementById('cdfNew').addEventListener('click',async()=>{close();const ok=await FS.createFile();if(ok){showToast('✅ Nuevo archivo creado');await loadAdvsCache();await loadCampaigns();renderAdvList();}});
+    document.getElementById('cdfOpen').addEventListener('click',async()=>{close();const ok=await FS.chooseFile();if(ok){showToast('✅ Archivo cargado');await loadAdvsCache();await loadCampaigns();renderAdvList();}});
+    document.getElementById('cdfCancel').addEventListener('click',close);
+};
 
 async function migrateLegacyData(){
     // Aventuras: añadir campaignId si no existe
@@ -2900,18 +3102,18 @@ async function migrateLegacyData(){
     for(const adv of window.advs){
         if(adv.campaignId === undefined){
             adv.campaignId = null;
-            try{ await DB.put('adventures', adv); advMigrated++; }
+            try{ await Store.put('adventures', adv); advMigrated++; }
             catch(e){ console.warn('Migration skip adv:', adv.id, e); }
         }
     }
     // Criaturas: añadir campaignIds si no existe
     let creatureMigrated = 0;
     try{
-        const creatures = await DB.getAll('bestiary') || [];
+        const creatures = await Store.getAll('bestiary') || [];
         for(const c of creatures){
             if(c.campaignIds === undefined){
                 c.campaignIds = [];
-                try{ await DB.put('bestiary', c); creatureMigrated++; }
+                try{ await Store.put('bestiary', c); creatureMigrated++; }
                 catch(e){ console.warn('Migration skip creature:', c.id, e); }
             }
         }
@@ -2985,7 +3187,7 @@ window.confirmRefImport=async function(){
         }
         if(mode==='replace')total+=incoming.length;
     }
-    await DB.put('references',{id:'global',rules:_references.rules||[],equipment:_references.equipment||[],spells:_references.spells||[],heroic:_references.heroic||[]});
+    await Store.put('references',{id:'global',rules:_references.rules||[],equipment:_references.equipment||[],spells:_references.spells||[],heroic:_references.heroic||[]});
     closeRefImportModal();
     showToast('✅ Referencias importadas ('+total+' entradas)');
 };
@@ -3048,7 +3250,7 @@ let _currentConsultTab = 'rules';
 
 async function loadReferences(){
     try{
-        const data=await DB.get('references','global');
+        const data=await Store.get('references','global');
         if(data){_references={rules:data.rules||[],equipment:data.equipment||[],spells:data.spells||[],heroic:data.heroic||[]};
         }
     }catch(e){
@@ -3058,7 +3260,7 @@ async function loadReferences(){
 }
 
 async function saveReferences(){
-    await DB.put('references',{id:'global',rules:_references.rules,equipment:_references.equipment,spells:_references.spells,heroic:_references.heroic||[]});
+    await Store.put('references',{id:'global',rules:_references.rules,equipment:_references.equipment,spells:_references.spells,heroic:_references.heroic||[]});
     showToast('📖 Referencias guardadas');
 }
 
@@ -3678,24 +3880,24 @@ const PC_LOADS = [
 // --- DB helpers ---
 async function getPcsBycampaign(campaignId){
     try{
-        const all = await DB.getAll('pcs') || [];
+        const all = await Store.getAll('pcs') || [];
         return all.filter(p => p.campaignId === campaignId);
     }catch(e){ return []; }
 }
 
-async function savePcToDB(pc){ await DB.put('pcs', pc); }
-async function deletePcFromDB(id){ await DB.del('pcs', id); }
+async function savePcToDB(pc){ await Store.put('pcs', pc); }
+async function deletePcFromDB(id){ await Store.del('pcs', id); }
 
 async function getPcState(advId, pcId){
     const key = advId+'__'+pcId;
-    try{ return await DB.get('pcStates', key) || {key, advId, pcId, conditions:[], load:'normal', deathRolls:0}; }
+    try{ return await Store.get('pcStates', key) || {key, advId, pcId, conditions:[], load:'normal', deathRolls:0}; }
     catch(e){ return {key, advId, pcId, conditions:[], load:'normal', deathRolls:0}; }
 }
 
 async function savePcState(state){
     if(!window.curId) return;
     state.key = state.advId+'__'+state.pcId;
-    await DB.put('pcStates', state);
+    await Store.put('pcStates', state);
 }
 
 // --- Barra de PJs ---
@@ -3917,7 +4119,7 @@ function buildPcAvatar(pc, state){
 // --- Modal de estado de PJ (modo juego) ---
 async function openPcModal(pcId){
     _currentPcId = pcId;
-    const allPcs = await DB.getAll('pcs') || [];
+    const allPcs = await Store.getAll('pcs') || [];
     const pc = allPcs.find(p => p.id === pcId);
     if(!pc) return;
 
@@ -4137,7 +4339,7 @@ window.savePc = async function(){
     if(_pcPortraitData === false){ portrait = undefined; }
     else if(typeof _pcPortraitData === 'string'){ portrait = _pcPortraitData; }
     else if(editId){
-        const all = await DB.getAll('pcs') || [];
+        const all = await Store.getAll('pcs') || [];
         portrait = all.find(p=>p.id===editId)?.portrait;
     }
 
