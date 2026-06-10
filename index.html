@@ -1462,11 +1462,41 @@ const FS = (() => {
         }catch(e){console.warn('FS: error leyendo archivo',e);return null;}
     }
 
+    async function _blobToBase64(blob){
+        return new Promise((resolve,reject)=>{
+            const reader=new FileReader();
+            reader.onload=()=>resolve(reader.result);
+            reader.onerror=()=>reject(reader.error);
+            reader.readAsDataURL(blob);
+        });
+    }
+
+    async function _serializeData(data){
+        // Clonar y convertir todos los Blobs a base64 para que JSON.stringify los guarde
+        const clone=JSON.parse(JSON.stringify(data, (_k, v)=>{
+            // Los Blobs se convierten en {} por JSON.stringify — los marcamos para post-proceso
+            if(v instanceof Blob)return '__BLOB__';
+            return v;
+        }));
+        // Recorrer adventures y convertir mapas Blob a base64
+        if(Array.isArray(data.adventures)){
+            for(let i=0;i<data.adventures.length;i++){
+                const adv=data.adventures[i];
+                if(adv.map instanceof Blob){
+                    try{clone.adventures[i].map=await _blobToBase64(adv.map);clone.adventures[i].mapType='base64';}
+                    catch(e){clone.adventures[i].map=null;}
+                }
+            }
+        }
+        return clone;
+    }
+
     async function _writeFile(data){
         if(!_fileHandle)return false;
         try{
+            const serialized=await _serializeData(data);
             const writable=await _fileHandle.createWritable();
-            await writable.write(JSON.stringify(data));
+            await writable.write(JSON.stringify(serialized));
             await writable.close();
             return true;
         }catch(e){console.warn('FS: error escribiendo archivo',e);return false;}
@@ -3187,14 +3217,24 @@ titleEl.innerHTML=campaign
     :escapeHtml(adv.name);
 const img = document.getElementById('mapImg');
 let _prevMapUrl = img._blobUrl || null;
-if (adv.mapType === 'file' && adv.map instanceof Blob) {
-    if (_prevMapUrl) { URL.revokeObjectURL(_prevMapUrl); }
+if (_prevMapUrl) { URL.revokeObjectURL(_prevMapUrl); img._blobUrl = null; }
+if (adv.map instanceof Blob) {
+    // Blob en memoria (IndexedDB)
     const newUrl = URL.createObjectURL(adv.map);
     img._blobUrl = newUrl;
     img.src = newUrl;
+} else if (typeof adv.map === 'string' && adv.map.startsWith('data:')) {
+    // Base64 (archivo JSON en disco o exportación antigua)
+    img.src = adv.map;
+    img._blobUrl = null;
+} else if (typeof adv.map === 'string' && adv.map.startsWith('http')) {
+    // URL externa
+    img.src = adv.map;
+    img._blobUrl = null;
 } else {
-    if (_prevMapUrl) { URL.revokeObjectURL(_prevMapUrl); img._blobUrl = null; }
-    img.src = adv.map; // compatibilidad con base64 antiguo
+    // Sin mapa
+    img.src = '';
+    img._blobUrl = null;
 };document.getElementById('mainMenu').classList.add('hidden');document.getElementById('createMenu').classList.remove('open');document.getElementById('advSubMenu').classList.remove('open');document.getElementById('appContainer').classList.add('open');setMode('design');renderRooms();renderSidebar();await initLightState();loadLightSources();loadShortEncounterCounter();updateDesignProgressUI();updateGameProgressUI();document.querySelector('.top-bar')?.classList.remove('collapsed');document.getElementById('topbar-toggle').style.display='none';
 // Sidebar minimizado por defecto
 document.getElementById('sidebar').classList.add('closed');document.getElementById('sidebar-toggle').textContent='▶';
@@ -3235,32 +3275,34 @@ renderPcBar();};
 async function showFsWelcome(){
     return new Promise(resolve=>{
         const overlay=document.createElement('div');
+        overlay.id='fsWelcomeOverlay';
         overlay.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,0.97);z-index:99999;display:flex;align-items:center;justify-content:center;padding:20px;';
         overlay.innerHTML=`
         <div style="background:var(--panel);border:2px solid var(--acc);border-radius:16px;padding:28px;max-width:380px;width:100%;text-align:center;">
             <div style="font-size:48px;margin-bottom:12px;">🗺️</div>
             <h2 style="color:var(--acc);margin:0 0 8px;">Campañas Dragonbane</h2>
-            <p style="color:var(--txt-secondary);font-size:13px;margin:0 0 24px;line-height:1.6;">Para que tus datos se guarden <strong style="color:var(--txt)">en tu disco</strong> y no se pierdan al cerrar el navegador, necesitas elegir dónde guardar.</p>
+            <p style="color:var(--txt-secondary);font-size:13px;margin:0 0 24px;line-height:1.6;">Para que tus datos se guarden <strong style="color:var(--txt)">en tu disco</strong> y no se pierdan al cerrar el navegador, selecciona un archivo .json donde guardar.</p>
             <div style="display:flex;flex-direction:column;gap:10px;">
-                <button id="fsNew" style="padding:14px;background:var(--acc);color:#000;border:none;border-radius:10px;cursor:pointer;font-weight:700;font-size:15px;">📄 Crear nuevo archivo de datos</button>
-                <button id="fsOpen" style="padding:14px;background:transparent;border:1px solid var(--acc);color:var(--acc);border-radius:10px;cursor:pointer;font-weight:600;font-size:14px;">📂 Abrir archivo existente</button>
-                <button id="fsSkip" style="padding:10px;background:transparent;border:none;color:var(--txt-secondary);cursor:pointer;font-size:12px;">Continuar sin guardar en disco (los datos se perderán al cerrar)</button>
+                <button id="fsBtnNew" style="padding:14px;background:var(--acc);color:#000;border:none;border-radius:10px;cursor:pointer;font-weight:700;font-size:15px;">📂 Seleccionar archivo de datos</button>
+                <button id="fsBtnSkip" style="padding:10px;background:transparent;border:none;color:var(--txt-secondary);cursor:pointer;font-size:12px;">Continuar sin guardar en disco (los datos se perderán al cerrar)</button>
             </div>
+            <p style="color:var(--txt-secondary);font-size:11px;margin:16px 0 0;line-height:1.5;">💡 Si el archivo no existe aún, créalo primero desde el explorador de archivos con cualquier nombre y extensión .json, luego selecciónalo aquí.</p>
         </div>`;
         document.body.appendChild(overlay);
-        document.getElementById('fsNew').addEventListener('click',async()=>{
-            const ok=await FS.createFile();
-            document.body.removeChild(overlay);
-            if(ok)showToast('✅ Archivo de datos creado. Tus datos se guardarán automáticamente.');
-            resolve();
+
+        // El click debe ser el gesto directo — sin await intermedios antes del picker
+        document.getElementById('fsBtnNew').addEventListener('click', async function(){
+            const ok = await FS.chooseFile();
+            if(ok){
+                document.body.removeChild(overlay);
+                showToast('✅ Archivo configurado. Tus datos se guardarán automáticamente.');
+                resolve();
+            } else {
+                showToast('⚠️ No se seleccionó ningún archivo', 'warn', 3000);
+            }
         });
-        document.getElementById('fsOpen').addEventListener('click',async()=>{
-            const ok=await FS.chooseFile();
-            document.body.removeChild(overlay);
-            if(ok)showToast('✅ Archivo cargado. Continuando con tus datos guardados.');
-            resolve();
-        });
-        document.getElementById('fsSkip').addEventListener('click',()=>{
+
+        document.getElementById('fsBtnSkip').addEventListener('click', ()=>{
             document.body.removeChild(overlay);
             showToast('⚠️ Modo sin persistencia: los datos se perderán al cerrar.','warn',5000);
             resolve();
@@ -3273,18 +3315,26 @@ window.changeDataFile=async function(){
     overlay.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,0.9);z-index:99999;display:flex;align-items:center;justify-content:center;padding:20px;';
     overlay.innerHTML=`
     <div style="background:var(--panel);border:2px solid var(--acc);border-radius:16px;padding:24px;max-width:340px;width:100%;text-align:center;">
-        <h3 style="color:var(--acc);margin:0 0 16px;">📂 Archivo de datos</h3>
+        <h3 style="color:var(--acc);margin:0 0 12px;">📂 Archivo de datos</h3>
+        <p style="color:var(--txt-secondary);font-size:12px;margin:0 0 16px;line-height:1.5;">Selecciona el archivo .json donde guardar tus datos. Si aún no tienes uno, créalo desde el explorador de archivos con extensión .json.</p>
         <div style="display:flex;flex-direction:column;gap:10px;">
-            <button id="cdfNew" style="padding:12px;background:var(--acc);color:#000;border:none;border-radius:8px;cursor:pointer;font-weight:700;">📄 Crear nuevo archivo</button>
-            <button id="cdfOpen" style="padding:12px;background:transparent;border:1px solid var(--acc);color:var(--acc);border-radius:8px;cursor:pointer;font-weight:600;">📂 Abrir archivo existente</button>
+            <button id="cdfOpen" style="padding:12px;background:var(--acc);color:#000;border:none;border-radius:8px;cursor:pointer;font-weight:700;">📂 Seleccionar archivo</button>
             <button id="cdfCancel" style="padding:10px;background:transparent;border:none;color:var(--txt-secondary);cursor:pointer;">Cancelar</button>
         </div>
     </div>`;
     document.body.appendChild(overlay);
-    const close=()=>document.body.removeChild(overlay);
-    document.getElementById('cdfNew').addEventListener('click',async()=>{close();const ok=await FS.createFile();if(ok){showToast('✅ Nuevo archivo creado');await loadAdvsCache();await loadCampaigns();renderAdvList();}});
-    document.getElementById('cdfOpen').addEventListener('click',async()=>{close();const ok=await FS.chooseFile();if(ok){showToast('✅ Archivo cargado');await loadAdvsCache();await loadCampaigns();renderAdvList();}});
-    document.getElementById('cdfCancel').addEventListener('click',close);
+    const close=()=>{ if(overlay.parentNode)document.body.removeChild(overlay); };
+    document.getElementById('cdfOpen').addEventListener('click', async function(){
+        const ok=await FS.chooseFile();
+        close();
+        if(ok){
+            showToast('✅ Archivo configurado');
+            await loadAdvsCache();
+            await loadCampaigns();
+            renderAdvList();
+        }
+    });
+    document.getElementById('cdfCancel').addEventListener('click', close);
 };
 
 async function migrateLegacyData(){
