@@ -9,6 +9,7 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="Dragonbane">
+    <link rel="icon" type="image/png" href="icon-192.png">
     <link rel="apple-touch-icon" href="icon-192.png">
     <link rel="manifest" href="manifest.json">
     <style>
@@ -1498,15 +1499,17 @@ const FS = (() => {
 
     async function chooseFile(){
         try{
-            // Intentar abrir archivo existente
             const [handle]=await window.showOpenFilePicker({
                 types:[{description:'Datos Campañas Dragonbane',accept:{'application/json':['.json']}}],
                 multiple:false
             });
             _fileHandle=handle;
-            await Store.put('appSettings',{id:'fsHandle',value:_fileHandle});
-            _data=await _readFile()||_emptyData();
-            console.log('✅ Archivo existente cargado');
+            await DB.put('appSettings',{id:'fsHandle',value:_fileHandle});
+            const existing=await _readFile();
+            _data=existing||_emptyData();
+            // Si el archivo estaba vacío o era nuevo, escribir estructura inicial
+            if(!existing)await _writeFile(_data);
+            console.log('✅ Archivo cargado:', handle.name);
             return true;
         }catch(e){
             if(e.name==='AbortError')return false;
@@ -1516,17 +1519,32 @@ const FS = (() => {
     }
 
     async function createFile(){
+        // showSaveFilePicker está bloqueado en algunos contextos (GitHub Pages + Edge)
+        // Usamos showOpenFilePicker — el usuario selecciona o crea un archivo .json
         try{
-            const handle=await window.showSaveFilePicker({
-                suggestedName:'campanyas-dragonbane.json',
-                types:[{description:'Datos Campañas Dragonbane',accept:{'application/json':['.json']}}]
-            });
-            _fileHandle=handle;
-            await Store.put('appSettings',{id:'fsHandle',value:_fileHandle});
-            _data=_emptyData();
-            await _writeFile(_data);
-            console.log('✅ Nuevo archivo de datos creado');
-            return true;
+            // Intentar showSaveFilePicker primero (Chrome desktop lo soporta bien)
+            if(typeof window.showSaveFilePicker==='function'){
+                try{
+                    const handle=await window.showSaveFilePicker({
+                        suggestedName:'campanyas-dragonbane.json',
+                        types:[{description:'Datos Campañas Dragonbane',accept:{'application/json':['.json']}}]
+                    });
+                    _fileHandle=handle;
+                    await DB.put('appSettings',{id:'fsHandle',value:_fileHandle});
+                    _data=_emptyData();
+                    await _writeFile(_data);
+                    console.log('✅ Nuevo archivo creado:', handle.name);
+                    return true;
+                }catch(saveErr){
+                    if(saveErr.name==='AbortError')return false;
+                    // Si falla por permisos, caer al showOpenFilePicker
+                    console.warn('showSaveFilePicker bloqueado, usando showOpenFilePicker');
+                }
+            }
+            // Fallback: abrir selector de archivo — el usuario selecciona un .json existente
+            // o crea uno nuevo desde el diálogo del SO
+            showToast('📂 Selecciona un archivo .json existente o crea uno nuevo desde el diálogo', 'info', 4000);
+            return await chooseFile();
         }catch(e){
             if(e.name==='AbortError')return false;
             console.warn('FS createFile error:',e);
