@@ -1619,7 +1619,15 @@ const FS = (() => {
 
     function getData(){return _data;}
 
-    return{init,chooseFile,createFile,isReady,get,put,del,getAll,replaceAll,getData};
+    return{init,chooseFile,createFile,isReady,get,put,del,getAll,replaceAll,getData,
+        _setHandle: async function(handle){
+            _fileHandle=handle;
+            await DB.put('appSettings',{id:'fsHandle',value:_fileHandle});
+            const existing=await _readFile();
+            _data=existing||_emptyData();
+            if(!existing)await _writeFile(_data);
+        }
+    };
 })();
 
 // ===== CAPA DE ABSTRACCIÓN: usa FS si está disponible, si no IndexedDB =====
@@ -3246,10 +3254,10 @@ renderPcBar();};
     const fsApiAvailable = typeof window.showOpenFilePicker === 'function' &&
                            typeof window.showSaveFilePicker === 'function';
     if(fsApiAvailable){
-        // PC con soporte FS — intentar cargar archivo de datos del disco
         const fsLoaded = await FS.init();
         if(!fsLoaded){
-            await showFsWelcome();
+            // Mostrar bienvenida DESPUÉS del init, no dentro — evita que Edge bloquee el picker
+            setTimeout(()=>showFsWelcome(), 300);
         }
     } else {
         // Móvil/WebView/iOS — usar IndexedDB directamente, sin preguntar
@@ -3272,51 +3280,60 @@ renderPcBar();};
     showToast('⚠️ Error de almacenamiento: '+e.message, 'error', 8000);
 }})();
 
-async function showFsWelcome(){
-    return new Promise(resolve=>{
-        const overlay=document.createElement('div');
-        overlay.id='fsWelcomeOverlay';
-        overlay.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,0.97);z-index:99999;display:flex;align-items:center;justify-content:center;padding:20px;';
-        overlay.innerHTML=`
-        <div style="background:var(--panel);border:2px solid var(--acc);border-radius:16px;padding:28px;max-width:380px;width:100%;text-align:center;">
-            <div style="font-size:48px;margin-bottom:12px;">🗺️</div>
-            <h2 style="color:var(--acc);margin:0 0 8px;">Campañas Dragonbane</h2>
-            <p style="color:var(--txt-secondary);font-size:13px;margin:0 0 24px;line-height:1.6;">Para que tus datos se guarden <strong style="color:var(--txt)">en tu disco</strong> y no se pierdan al cerrar el navegador, selecciona un archivo .json donde guardar.</p>
-            <div style="display:flex;flex-direction:column;gap:10px;">
-                <button id="fsBtnNew" style="padding:14px;background:var(--acc);color:#000;border:none;border-radius:10px;cursor:pointer;font-weight:700;font-size:15px;">📂 Seleccionar archivo de datos</button>
-                <button id="fsBtnSkip" style="padding:10px;background:transparent;border:none;color:var(--txt-secondary);cursor:pointer;font-size:12px;">Continuar sin guardar en disco (los datos se perderán al cerrar)</button>
-            </div>
-            <p style="color:var(--txt-secondary);font-size:11px;margin:16px 0 0;line-height:1.5;">💡 Si el archivo no existe aún, créalo primero desde el explorador de archivos con cualquier nombre y extensión .json, luego selecciónalo aquí.</p>
-        </div>`;
-        document.body.appendChild(overlay);
+// ===== PANTALLA BIENVENIDA FS =====
+// Se muestra DESPUÉS del init, con botón conectado directamente al picker sin cadena async
+function showFsWelcome(){
+    const overlay=document.createElement('div');
+    overlay.id='fsWelcomeOverlay';
+    overlay.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,0.97);z-index:99999;display:flex;align-items:center;justify-content:center;padding:20px;';
+    overlay.innerHTML=`
+    <div style="background:var(--panel);border:2px solid var(--acc);border-radius:16px;padding:28px;max-width:380px;width:100%;text-align:center;">
+        <div style="font-size:48px;margin-bottom:12px;">🗺️</div>
+        <h2 style="color:var(--acc);margin:0 0 8px;">Campañas Dragonbane</h2>
+        <p style="color:var(--txt-secondary);font-size:13px;margin:0 0 20px;line-height:1.6;">Para guardar tus datos en disco, selecciona un archivo <strong style="color:var(--txt)">.json</strong> donde guardar.</p>
+        <p style="color:var(--txt-secondary);font-size:11px;margin:0 0 20px;line-height:1.5;background:var(--input-bg);padding:10px;border-radius:8px;">💡 Si no tienes el archivo aún, crea uno vacío desde el explorador de Windows:<br><strong style="color:var(--txt)">Clic derecho → Nuevo → Documento de texto → renómbralo a datos.json</strong></p>
+        <div style="display:flex;flex-direction:column;gap:10px;">
+            <button id="fsBtnNew" style="padding:14px;background:var(--acc);color:#000;border:none;border-radius:10px;cursor:pointer;font-weight:700;font-size:15px;">📂 Seleccionar archivo .json</button>
+            <button id="fsBtnSkip" style="padding:10px;background:transparent;border:none;color:var(--txt-secondary);cursor:pointer;font-size:12px;">Continuar sin guardar en disco</button>
+        </div>
+    </div>`;
+    document.body.appendChild(overlay);
 
-        // El click debe ser el gesto directo — sin await intermedios antes del picker
-        document.getElementById('fsBtnNew').addEventListener('click', async function(){
-            const ok = await FS.chooseFile();
-            if(ok){
-                document.body.removeChild(overlay);
-                showToast('✅ Archivo configurado. Tus datos se guardarán automáticamente.');
-                resolve();
-            } else {
-                showToast('⚠️ No se seleccionó ningún archivo', 'warn', 3000);
-            }
-        });
-
-        document.getElementById('fsBtnSkip').addEventListener('click', ()=>{
+    // Conexión DIRECTA entre el click y el picker — sin ninguna async chain antes
+    document.getElementById('fsBtnNew').onclick = async function(){
+        try{
+            const [handle] = await window.showOpenFilePicker({
+                types:[{description:'Datos JSON',accept:{'application/json':['.json']}}],
+                multiple:false
+            });
+            await FS._setHandle(handle);
             document.body.removeChild(overlay);
-            showToast('⚠️ Modo sin persistencia: los datos se perderán al cerrar.','warn',5000);
-            resolve();
-        });
-    });
+            showToast('✅ Archivo configurado. Los datos se guardarán automáticamente.');
+            // Recargar datos si el archivo tenía contenido
+            await loadAdvsCache();
+            await loadCampaigns();
+            renderAdvList();
+            updateFileIndicator(handle.name, true);
+        }catch(e){
+            if(e.name!=='AbortError'){
+                showToast('❌ Error: '+e.message,'error',4000);
+            }
+        }
+    };
+
+    document.getElementById('fsBtnSkip').onclick = function(){
+        document.body.removeChild(overlay);
+        showToast('⚠️ Modo sin persistencia activo','warn',4000);
+    };
 }
 
-window.changeDataFile=async function(){
+window.changeDataFile=function(){
     const overlay=document.createElement('div');
     overlay.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,0.9);z-index:99999;display:flex;align-items:center;justify-content:center;padding:20px;';
     overlay.innerHTML=`
     <div style="background:var(--panel);border:2px solid var(--acc);border-radius:16px;padding:24px;max-width:340px;width:100%;text-align:center;">
         <h3 style="color:var(--acc);margin:0 0 12px;">📂 Archivo de datos</h3>
-        <p style="color:var(--txt-secondary);font-size:12px;margin:0 0 16px;line-height:1.5;">Selecciona el archivo .json donde guardar tus datos. Si aún no tienes uno, créalo desde el explorador de archivos con extensión .json.</p>
+        <p style="color:var(--txt-secondary);font-size:12px;margin:0 0 16px;line-height:1.5;">Selecciona el archivo .json donde guardar tus datos.</p>
         <div style="display:flex;flex-direction:column;gap:10px;">
             <button id="cdfOpen" style="padding:12px;background:var(--acc);color:#000;border:none;border-radius:8px;cursor:pointer;font-weight:700;">📂 Seleccionar archivo</button>
             <button id="cdfCancel" style="padding:10px;background:transparent;border:none;color:var(--txt-secondary);cursor:pointer;">Cancelar</button>
@@ -3324,17 +3341,24 @@ window.changeDataFile=async function(){
     </div>`;
     document.body.appendChild(overlay);
     const close=()=>{ if(overlay.parentNode)document.body.removeChild(overlay); };
-    document.getElementById('cdfOpen').addEventListener('click', async function(){
-        const ok=await FS.chooseFile();
-        close();
-        if(ok){
+    document.getElementById('cdfOpen').onclick = async function(){
+        try{
+            const [handle] = await window.showOpenFilePicker({
+                types:[{description:'Datos JSON',accept:{'application/json':['.json']}}],
+                multiple:false
+            });
+            await FS._setHandle(handle);
+            close();
             showToast('✅ Archivo configurado');
             await loadAdvsCache();
             await loadCampaigns();
             renderAdvList();
+            updateFileIndicator(handle.name, true);
+        }catch(e){
+            if(e.name!=='AbortError') showToast('❌ Error: '+e.message,'error',4000);
         }
-    });
-    document.getElementById('cdfCancel').addEventListener('click', close);
+    };
+    document.getElementById('cdfCancel').onclick = close;
 };
 
 async function migrateLegacyData(){
