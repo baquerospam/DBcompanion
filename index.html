@@ -1588,12 +1588,16 @@ const FS = (() => {
 
     async function get(store,key){
         if(!_data||!_data[store])return undefined;
-        return _data[store].find(x=>x[_keyFor(store)]===key);
+        const arr=Array.isArray(_data[store])?_data[store]:[_data[store]].filter(Boolean);
+        return arr.find(x=>x[_keyFor(store)]===key);
     }
 
     async function put(store,value){
         if(!_data)_data=_emptyData();
         if(!_data[store])_data[store]=[];
+        if(!Array.isArray(_data[store])){
+            _data[store]=[_data[store]].filter(Boolean);
+        }
         const key=_keyFor(store);
         const idx=_data[store].findIndex(x=>x[key]===value[key]);
         if(idx>=0)_data[store][idx]=value; else _data[store].push(value);
@@ -1602,14 +1606,16 @@ const FS = (() => {
 
     async function del(store,key){
         if(!_data||!_data[store])return;
+        const arr=Array.isArray(_data[store])?_data[store]:[_data[store]].filter(Boolean);
         const k=_keyFor(store);
-        _data[store]=_data[store].filter(x=>x[k]!==key);
+        _data[store]=arr.filter(x=>x[k]!==key);
         await _writeFile(_data);
     }
 
     async function getAll(store){
         if(!_data||!_data[store])return[];
-        return[..._data[store]];
+        const arr=Array.isArray(_data[store])?_data[store]:[_data[store]].filter(Boolean);
+        return[...arr];
     }
 
     async function replaceAll(data){
