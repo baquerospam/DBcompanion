@@ -9,7 +9,6 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="Dragonbane">
-    <link rel="icon" type="image/png" href="icon-192.png">
     <link rel="apple-touch-icon" href="icon-192.png">
     <link rel="manifest" href="manifest.json">
     <style>
@@ -347,49 +346,6 @@
             .menu-btn { padding: 10px 14px; }
             .menu-btn.primary { padding: 12px 14px; }
         }
-        /* ===== INDICADOR DE ARCHIVO ACTIVO ===== */
-        #fileIndicator { font-size: 10px; color: var(--txt-secondary); padding: 2px 8px; background: var(--input-bg); border-radius: 10px; display: flex; align-items: center; gap: 4px; max-width: 180px; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; cursor: default; flex-shrink: 0; }
-        #fileIndicator.saved { color: #4ade80; }
-        #fileIndicator.unsaved { color: #f97316; }
-
-        /* ===== BÚSQUEDA GLOBAL ===== */
-        #globalSearchModal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.9); z-index: 9000; align-items: flex-start; justify-content: center; padding: 60px 16px 16px; }
-        #globalSearchModal.open { display: flex; }
-        #globalSearchBox { background: var(--panel); border: 2px solid var(--acc); border-radius: 14px; width: 100%; max-width: 560px; display: flex; flex-direction: column; max-height: 80vh; }
-        #globalSearchInput { padding: 14px 16px; background: transparent; border: none; border-bottom: 1px solid var(--border); color: var(--txt); font-size: 16px; outline: none; width: 100%; box-sizing: border-box; }
-        #globalSearchResults { overflow-y: auto; padding: 8px; flex: 1; }
-        .gs-result { padding: 10px 12px; border-radius: 8px; cursor: pointer; border: 1px solid transparent; margin-bottom: 4px; }
-        .gs-result:hover { background: var(--hover-bg); border-color: var(--border); }
-        .gs-result-title { font-weight: 600; color: var(--txt); font-size: 13px; }
-        .gs-result-snippet { font-size: 11px; color: var(--txt-secondary); margin-top: 2px; }
-        .gs-result-type { font-size: 10px; color: var(--acc); font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; }
-
-        /* ===== NOTAS RÁPIDAS ===== */
-        #quickNoteBtn { position: fixed; bottom: calc(70px + var(--safe-bottom)); right: 12px; z-index: 500; width: 48px; height: 48px; border-radius: 50%; background: var(--acc); color: #000; border: none; font-size: 22px; cursor: pointer; box-shadow: 0 4px 16px rgba(0,0,0,0.4); display: none; align-items: center; justify-content: center; }
-        #quickNotePanel { display: none; position: fixed; bottom: calc(128px + var(--safe-bottom)); right: 12px; z-index: 499; width: 300px; background: var(--panel); border: 2px solid var(--acc); border-radius: 14px; box-shadow: 0 8px 32px rgba(0,0,0,0.6); flex-direction: column; overflow: hidden; }
-        #quickNotePanel.open { display: flex; }
-        #quickNotePanel textarea { background: var(--input-bg); border: none; border-bottom: 1px solid var(--border); color: var(--txt); padding: 12px; font-size: 13px; resize: none; height: 140px; outline: none; font-family: inherit; }
-        #quickNoteList { overflow-y: auto; max-height: 180px; padding: 6px; }
-        .qn-item { background: var(--input-bg); border: 1px solid var(--border); border-radius: 8px; padding: 8px 10px; margin-bottom: 4px; font-size: 12px; color: var(--txt); display: flex; gap: 6px; align-items: flex-start; cursor: pointer; }
-        .qn-item:hover { border-color: var(--acc); }
-        .qn-time { color: var(--txt-secondary); font-size: 10px; flex-shrink: 0; }
-
-        /* ===== TIMER ===== */
-        #timerWidget { display: none; position: fixed; top: 52px; right: 60px; z-index: 400; background: var(--panel); border: 1px solid var(--border); border-radius: 10px; padding: 6px 12px; font-size: 13px; color: var(--acc); font-weight: 700; cursor: pointer; box-shadow: 0 4px 12px rgba(0,0,0,0.4); user-select: none; }
-        #timerWidget.running { border-color: var(--acc); }
-        #timerWidget.paused { border-color: #888; color: #888; }
-
-        /* ===== PANEL CLIMA/AMBIENTE ===== */
-        #weatherPanel { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.85); z-index: 5000; align-items: center; justify-content: center; padding: 16px; }
-        #weatherPanel.open { display: flex; }
-        #weatherBox { background: var(--panel); border: 2px solid var(--acc); border-radius: 16px; width: 100%; max-width: 400px; max-height: 90vh; overflow-y: auto; }
-        .weather-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; padding: 12px; }
-        .weather-btn { background: var(--input-bg); border: 2px solid var(--border); border-radius: 10px; padding: 12px 6px; text-align: center; cursor: pointer; transition: all .15s; font-size: 11px; color: var(--txt); }
-        .weather-btn:hover, .weather-btn.active { border-color: var(--acc); background: var(--hover-bg); }
-        .weather-btn .wi { font-size: 24px; display: block; margin-bottom: 4px; }
-        #weatherDisplay { display: none; position: fixed; top: 52px; left: 50%; transform: translateX(-50%); z-index: 300; background: var(--panel); border: 1px solid var(--border); border-radius: 20px; padding: 4px 14px; font-size: 12px; color: var(--txt-secondary); cursor: pointer; white-space: nowrap; }
-        #weatherDisplay.visible { display: block; }
-
         @media (max-width: 600px) { :root { --sidebar-w: 100%; } .check-grid { grid-template-columns: repeat(2,1fr); } #bestiaryList { grid-template-columns: 1fr; padding: 8px; } .table-floating-btn { bottom: calc(16px + var(--safe-bottom)); right: 70px; width: 44px; height: 44px; font-size: 22px; } .modal-box { max-width: 95vw; } .hp-btn { width: 36px; height: 36px; font-size: 14px; } .hp-input { width: 50px; font-size: 14px; } }
         body.game-mode #appContainer { display: flex !important; flex-direction: column !important; }
         body.game-mode #workspace { flex: 1 !important; height: 100% !important; }
@@ -707,7 +663,7 @@
 <div class="form-group" style="margin-top:12px;"><label>Notas</label><textarea id="animalNotes" maxlength="300" style="min-height:50px;"></textarea></div>
 </div></form></div><div class="panel-footer"><button type="button" class="p-btn close" onclick="closeAddCreatureModal()">❌ Cancelar</button><button type="button" class="p-btn save" onclick="saveNewCreature()">💾 Guardar</button></div></div></div>
     <div id="appContainer">
-        <div class="top-bar"><span id="advTitle" style="font-weight:bold;color:var(--acc);margin-right:auto;">Aventura</span><div id="fileIndicator" title="Archivo de datos activo">💾 —</div><div class="top-actions"><button id="btn-undo" class="top-btn undo-btn" title="Deshacer (Ctrl+Z)" onclick="undo()">↩</button><button class="top-btn" onclick="openGlobalSearch()" title="Búsqueda global (Ctrl+F)">🔍</button><button id="btnDesign" class="top-btn active" onclick="setMode('design')">🛠️ Diseño</button><button id="btnGame" class="top-btn" onclick="setMode('game')">🎮 Juego</button><button id="btnReferences" class="top-btn" onclick="openReferencesConsult()" style="display:none;" title="Referencias">📖</button><div class="hamburger-menu"><button class="top-btn hamburger-btn" onclick="toggleHamburgerMenu()">☰</button></div></div></div>
+        <div class="top-bar"><span id="advTitle" style="font-weight:bold;color:var(--acc);margin-right:auto;">Aventura</span><div class="top-actions"><button id="btn-undo" class="top-btn undo-btn" title="Deshacer (Ctrl+Z)" onclick="undo()">↩</button><button id="btnDesign" class="top-btn active" onclick="setMode('design')">🛠️ Diseño</button><button id="btnGame" class="top-btn" onclick="setMode('game')">🎮 Juego</button><button id="btnReferences" class="top-btn" onclick="openReferencesConsult()" style="display:none;" title="Referencias">📖</button><div class="hamburger-menu"><button class="top-btn hamburger-btn" onclick="toggleHamburgerMenu()">☰</button></div></div></div>
         <button id="topbar-toggle" onclick="toggleTopBar()">▼</button>
         <!-- VENTANA FLOTANTE DE PJs -->
         <div id="pcBar"></div>
@@ -754,7 +710,7 @@
             <div id="splashSpinner"></div>
         </div>
     </div>
-    <div id="hamburgerDropdown" class="hamburger-dropdown"><button class="top-btn save-btn" onclick="saveAndNotify()">💾 Guardar</button><button class="top-btn" onclick="openAdvNotes()">📓 Notas de aventura</button><button class="top-btn" onclick="exportAdv(window.curId)">📤 Exportar esta aventura</button><button class="top-btn" onclick="openWeatherPanel()">🌦️ Clima / Ambiente</button><button class="top-btn" onclick="toggleTimer()">⏱️ Timer de sesión</button><button id="themeToggle" onclick="toggleTheme()">🌓 Modo claro/oscuro</button><button class="top-btn" onclick="toggleTopBar()">▲ Minimizar</button><button class="top-btn" onclick="toggleFullscreen()">⛶ Pantalla completa</button><button id="btnChangeDataFile" class="top-btn" onclick="changeDataFile()">📂 Cambiar archivo de datos</button><button class="top-btn" onclick="showMenu()">🏠 Menú principal</button><button class="top-btn" onclick="resetAdventure()" style="color:#ff6b6b;border-color:rgba(220,38,38,.4);">🔄 Reiniciar aventura</button></div>
+    <div id="hamburgerDropdown" class="hamburger-dropdown"><button class="top-btn save-btn" onclick="saveAndNotify()">💾 Guardar</button><button class="top-btn" onclick="openAdvNotes()">📓 Notas de aventura</button><button class="top-btn" onclick="exportAdv(window.curId)">📤 Exportar esta aventura</button><button id="themeToggle" onclick="toggleTheme()">🌓 Modo claro/oscuro</button><button class="top-btn" onclick="toggleTopBar()">▲ Minimizar</button><button class="top-btn" onclick="toggleFullscreen()">⛶ Pantalla completa</button><button id="btnChangeDataFile" class="top-btn" onclick="changeDataFile()">📂 Cambiar archivo de datos</button><button class="top-btn" onclick="showMenu()">🏠 Menú principal</button><button class="top-btn" onclick="resetAdventure()" style="color:#ff6b6b;border-color:rgba(220,38,38,.4);">🔄 Reiniciar aventura</button></div>
     <!-- MODAL DE PREVISUALIZACIÓN DE REFERENCIAS -->
     <div id="refImportModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:9998;align-items:center;justify-content:center;padding:20px;">
         <div style="background:var(--panel);border:1px solid var(--border);border-radius:14px;padding:20px;max-width:420px;width:100%;max-height:80vh;display:flex;flex-direction:column;gap:12px;">
@@ -916,98 +872,6 @@
     </div>
 
     <div id="toast" class="toast">✅ Guardado correctamente</div>
-
-    <!-- BÚSQUEDA GLOBAL -->
-    <div id="globalSearchModal">
-        <div id="globalSearchBox">
-            <div style="display:flex;align-items:center;padding:4px 12px 0;gap:8px;">
-                <span style="font-size:18px;">🔍</span>
-                <input id="globalSearchInput" placeholder="Buscar en salas, notas, reglas..." oninput="runGlobalSearch(this.value)" autocomplete="off">
-                <button onclick="closeGlobalSearch()" style="background:none;border:none;color:var(--txt-secondary);font-size:20px;cursor:pointer;padding:8px;">✕</button>
-            </div>
-            <div id="globalSearchResults" style="padding:8px;"></div>
-        </div>
-    </div>
-
-    <!-- NOTAS RÁPIDAS -->
-    <button id="quickNoteBtn" onclick="toggleQuickNote()" title="Notas rápidas de sesión">📝</button>
-    <div id="quickNotePanel">
-        <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 12px;border-bottom:1px solid var(--border);">
-            <span style="font-weight:700;color:var(--acc);font-size:13px;">📝 Notas rápidas</span>
-            <button onclick="toggleQuickNote()" style="background:none;border:none;color:var(--txt-secondary);cursor:pointer;">✕</button>
-        </div>
-        <textarea id="quickNoteInput" placeholder="Escribe una nota..." rows="4"></textarea>
-        <div style="display:flex;gap:6px;padding:6px 8px;border-bottom:1px solid var(--border);">
-            <button onclick="saveQuickNote()" style="flex:1;background:var(--acc);color:#000;border:none;border-radius:6px;padding:7px;cursor:pointer;font-weight:700;font-size:12px;">➕ Guardar nota</button>
-            <button onclick="clearQuickNotes()" style="background:transparent;border:1px solid var(--border);color:var(--txt-secondary);border-radius:6px;padding:7px 10px;cursor:pointer;font-size:12px;">🗑️</button>
-        </div>
-        <div id="quickNoteList" style="padding:6px;overflow-y:auto;max-height:180px;"></div>
-    </div>
-
-    <!-- TIMER -->
-    <div id="timerWidget" onclick="toggleTimerPause()" title="Click para pausar/reanudar · Doble click para reiniciar" ondblclick="resetTimer()">⏱️ 00:00</div>
-
-    <!-- DISPLAY CLIMA -->
-    <div id="weatherDisplay" onclick="openWeatherPanel()"></div>
-
-    <!-- PANEL CLIMA/AMBIENTE -->
-    <div id="weatherPanel">
-        <div id="weatherBox">
-            <div style="display:flex;align-items:center;justify-content:space-between;padding:16px 18px;border-bottom:1px solid var(--border);">
-                <h3 style="margin:0;color:var(--acc);">🌦️ Clima y Ambiente</h3>
-                <button onclick="closeWeatherPanel()" style="background:none;border:none;color:var(--txt-secondary);font-size:20px;cursor:pointer;">✕</button>
-            </div>
-            <div style="padding:12px 16px 4px;">
-                <div style="font-size:11px;font-weight:700;color:var(--txt-secondary);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px;">🌡️ Temperatura</div>
-                <div class="weather-grid">
-                    <div class="weather-btn" onclick="setWeather('temp','❄️ Gélido')" data-cat="temp"><span class="wi">❄️</span>Gélido</div>
-                    <div class="weather-btn" onclick="setWeather('temp','🥶 Frío')" data-cat="temp"><span class="wi">🥶</span>Frío</div>
-                    <div class="weather-btn" onclick="setWeather('temp','😊 Templado')" data-cat="temp"><span class="wi">😊</span>Templado</div>
-                    <div class="weather-btn" onclick="setWeather('temp','☀️ Cálido')" data-cat="temp"><span class="wi">☀️</span>Cálido</div>
-                    <div class="weather-btn" onclick="setWeather('temp','🔥 Sofocante')" data-cat="temp"><span class="wi">🔥</span>Sofocante</div>
-                    <div class="weather-btn" onclick="setWeather('temp',null)" data-cat="temp"><span class="wi">✖️</span>Ninguno</div>
-                </div>
-                <div style="font-size:11px;font-weight:700;color:var(--txt-secondary);text-transform:uppercase;letter-spacing:1px;margin:8px 0;">🌧️ Precipitación</div>
-                <div class="weather-grid">
-                    <div class="weather-btn" onclick="setWeather('prec','☀️ Despejado')" data-cat="prec"><span class="wi">☀️</span>Despejado</div>
-                    <div class="weather-btn" onclick="setWeather('prec','⛅ Nublado')" data-cat="prec"><span class="wi">⛅</span>Nublado</div>
-                    <div class="weather-btn" onclick="setWeather('prec','🌧️ Lluvia')" data-cat="prec"><span class="wi">🌧️</span>Lluvia</div>
-                    <div class="weather-btn" onclick="setWeather('prec','⛈️ Tormenta')" data-cat="prec"><span class="wi">⛈️</span>Tormenta</div>
-                    <div class="weather-btn" onclick="setWeather('prec','🌨️ Nieve')" data-cat="prec"><span class="wi">🌨️</span>Nieve</div>
-                    <div class="weather-btn" onclick="setWeather('prec','🌫️ Niebla')" data-cat="prec"><span class="wi">🌫️</span>Niebla</div>
-                </div>
-                <div style="font-size:11px;font-weight:700;color:var(--txt-secondary);text-transform:uppercase;letter-spacing:1px;margin:8px 0;">🌙 Momento del día</div>
-                <div class="weather-grid">
-                    <div class="weather-btn" onclick="setWeather('time','🌅 Amanecer')" data-cat="time"><span class="wi">🌅</span>Amanecer</div>
-                    <div class="weather-btn" onclick="setWeather('time','☀️ Día')" data-cat="time"><span class="wi">☀️</span>Día</div>
-                    <div class="weather-btn" onclick="setWeather('time','🌆 Atardecer')" data-cat="time"><span class="wi">🌆</span>Atardecer</div>
-                    <div class="weather-btn" onclick="setWeather('time','🌙 Noche')" data-cat="time"><span class="wi">🌙</span>Noche</div>
-                    <div class="weather-btn" onclick="setWeather('time','🌑 Medianoche')" data-cat="time"><span class="wi">🌑</span>Medianoche</div>
-                    <div class="weather-btn" onclick="setWeather('time',null)" data-cat="time"><span class="wi">✖️</span>Ninguno</div>
-                </div>
-                <div style="font-size:11px;font-weight:700;color:var(--txt-secondary);text-transform:uppercase;letter-spacing:1px;margin:8px 0;">🏔️ Entorno</div>
-                <div class="weather-grid">
-                    <div class="weather-btn" onclick="setWeather('env','🏙️ Ciudad')" data-cat="env"><span class="wi">🏙️</span>Ciudad</div>
-                    <div class="weather-btn" onclick="setWeather('env','🌲 Bosque')" data-cat="env"><span class="wi">🌲</span>Bosque</div>
-                    <div class="weather-btn" onclick="setWeather('env','🏔️ Montaña')" data-cat="env"><span class="wi">🏔️</span>Montaña</div>
-                    <div class="weather-btn" onclick="setWeather('env','🏜️ Desierto')" data-cat="env"><span class="wi">🏜️</span>Desierto</div>
-                    <div class="weather-btn" onclick="setWeather('env','🌊 Costa')" data-cat="env"><span class="wi">🌊</span>Costa</div>
-                    <div class="weather-btn" onclick="setWeather('env','🕳️ Mazmorra')" data-cat="env"><span class="wi">🕳️</span>Mazmorra</div>
-                    <div class="weather-btn" onclick="setWeather('env','🏚️ Ruinas')" data-cat="env"><span class="wi">🏚️</span>Ruinas</div>
-                    <div class="weather-btn" onclick="setWeather('env','🌾 Campiña')" data-cat="env"><span class="wi">🌾</span>Campiña</div>
-                    <div class="weather-btn" onclick="setWeather('env',null)" data-cat="env"><span class="wi">✖️</span>Ninguno</div>
-                </div>
-            </div>
-            <div style="padding:12px 16px;">
-                <div style="font-size:11px;font-weight:700;color:var(--txt-secondary);text-transform:uppercase;letter-spacing:1px;margin-bottom:6px;">🎭 Nota de ambiente libre</div>
-                <textarea id="weatherNote" placeholder="Describe el ambiente, sonidos, olores..." rows="3" style="width:100%;background:var(--input-bg);border:1px solid var(--border);color:var(--txt);border-radius:8px;padding:8px;font-size:13px;resize:none;box-sizing:border-box;font-family:inherit;" oninput="updateWeatherDisplay()"></textarea>
-            </div>
-            <div style="padding:0 16px 16px;display:flex;gap:8px;">
-                <button onclick="clearWeather()" style="flex:1;padding:10px;background:transparent;border:1px solid var(--border);color:var(--txt-secondary);border-radius:8px;cursor:pointer;">🗑️ Limpiar todo</button>
-                <button onclick="closeWeatherPanel()" style="flex:2;padding:10px;background:var(--acc);color:#000;border:none;border-radius:8px;cursor:pointer;font-weight:700;">✅ Cerrar</button>
-            </div>
-        </div>
-    </div>
 <script>
 // ===== CAMPAÑAS =====
 let _campaigns = [];
@@ -1462,41 +1326,11 @@ const FS = (() => {
         }catch(e){console.warn('FS: error leyendo archivo',e);return null;}
     }
 
-    async function _blobToBase64(blob){
-        return new Promise((resolve,reject)=>{
-            const reader=new FileReader();
-            reader.onload=()=>resolve(reader.result);
-            reader.onerror=()=>reject(reader.error);
-            reader.readAsDataURL(blob);
-        });
-    }
-
-    async function _serializeData(data){
-        // Clonar y convertir todos los Blobs a base64 para que JSON.stringify los guarde
-        const clone=JSON.parse(JSON.stringify(data, (_k, v)=>{
-            // Los Blobs se convierten en {} por JSON.stringify — los marcamos para post-proceso
-            if(v instanceof Blob)return '__BLOB__';
-            return v;
-        }));
-        // Recorrer adventures y convertir mapas Blob a base64
-        if(Array.isArray(data.adventures)){
-            for(let i=0;i<data.adventures.length;i++){
-                const adv=data.adventures[i];
-                if(adv.map instanceof Blob){
-                    try{clone.adventures[i].map=await _blobToBase64(adv.map);clone.adventures[i].mapType='base64';}
-                    catch(e){clone.adventures[i].map=null;}
-                }
-            }
-        }
-        return clone;
-    }
-
     async function _writeFile(data){
         if(!_fileHandle)return false;
         try{
-            const serialized=await _serializeData(data);
             const writable=await _fileHandle.createWritable();
-            await writable.write(JSON.stringify(serialized));
+            await writable.write(JSON.stringify(data));
             await writable.close();
             return true;
         }catch(e){console.warn('FS: error escribiendo archivo',e);return false;}
@@ -1529,17 +1363,15 @@ const FS = (() => {
 
     async function chooseFile(){
         try{
+            // Intentar abrir archivo existente
             const [handle]=await window.showOpenFilePicker({
                 types:[{description:'Datos Campañas Dragonbane',accept:{'application/json':['.json']}}],
                 multiple:false
             });
             _fileHandle=handle;
-            await DB.put('appSettings',{id:'fsHandle',value:_fileHandle});
-            const existing=await _readFile();
-            _data=existing||_emptyData();
-            // Si el archivo estaba vacío o era nuevo, escribir estructura inicial
-            if(!existing)await _writeFile(_data);
-            console.log('✅ Archivo cargado:', handle.name);
+            await Store.put('appSettings',{id:'fsHandle',value:_fileHandle});
+            _data=await _readFile()||_emptyData();
+            console.log('✅ Archivo existente cargado');
             return true;
         }catch(e){
             if(e.name==='AbortError')return false;
@@ -1549,32 +1381,17 @@ const FS = (() => {
     }
 
     async function createFile(){
-        // showSaveFilePicker está bloqueado en algunos contextos (GitHub Pages + Edge)
-        // Usamos showOpenFilePicker — el usuario selecciona o crea un archivo .json
         try{
-            // Intentar showSaveFilePicker primero (Chrome desktop lo soporta bien)
-            if(typeof window.showSaveFilePicker==='function'){
-                try{
-                    const handle=await window.showSaveFilePicker({
-                        suggestedName:'campanyas-dragonbane.json',
-                        types:[{description:'Datos Campañas Dragonbane',accept:{'application/json':['.json']}}]
-                    });
-                    _fileHandle=handle;
-                    await DB.put('appSettings',{id:'fsHandle',value:_fileHandle});
-                    _data=_emptyData();
-                    await _writeFile(_data);
-                    console.log('✅ Nuevo archivo creado:', handle.name);
-                    return true;
-                }catch(saveErr){
-                    if(saveErr.name==='AbortError')return false;
-                    // Si falla por permisos, caer al showOpenFilePicker
-                    console.warn('showSaveFilePicker bloqueado, usando showOpenFilePicker');
-                }
-            }
-            // Fallback: abrir selector de archivo — el usuario selecciona un .json existente
-            // o crea uno nuevo desde el diálogo del SO
-            showToast('📂 Selecciona un archivo .json existente o crea uno nuevo desde el diálogo', 'info', 4000);
-            return await chooseFile();
+            const handle=await window.showSaveFilePicker({
+                suggestedName:'campanyas-dragonbane.json',
+                types:[{description:'Datos Campañas Dragonbane',accept:{'application/json':['.json']}}]
+            });
+            _fileHandle=handle;
+            await Store.put('appSettings',{id:'fsHandle',value:_fileHandle});
+            _data=_emptyData();
+            await _writeFile(_data);
+            console.log('✅ Nuevo archivo de datos creado');
+            return true;
         }catch(e){
             if(e.name==='AbortError')return false;
             console.warn('FS createFile error:',e);
@@ -1619,15 +1436,7 @@ const FS = (() => {
 
     function getData(){return _data;}
 
-    return{init,chooseFile,createFile,isReady,get,put,del,getAll,replaceAll,getData,
-        _setHandle: async function(handle){
-            _fileHandle=handle;
-            await DB.put('appSettings',{id:'fsHandle',value:_fileHandle});
-            const existing=await _readFile();
-            _data=existing||_emptyData();
-            if(!existing)await _writeFile(_data);
-        }
-    };
+    return{init,chooseFile,createFile,isReady,get,put,del,getAll,replaceAll,getData};
 })();
 
 // ===== CAPA DE ABSTRACCIÓN: usa FS si está disponible, si no IndexedDB =====
@@ -3225,24 +3034,14 @@ titleEl.innerHTML=campaign
     :escapeHtml(adv.name);
 const img = document.getElementById('mapImg');
 let _prevMapUrl = img._blobUrl || null;
-if (_prevMapUrl) { URL.revokeObjectURL(_prevMapUrl); img._blobUrl = null; }
-if (adv.map instanceof Blob) {
-    // Blob en memoria (IndexedDB)
+if (adv.mapType === 'file' && adv.map instanceof Blob) {
+    if (_prevMapUrl) { URL.revokeObjectURL(_prevMapUrl); }
     const newUrl = URL.createObjectURL(adv.map);
     img._blobUrl = newUrl;
     img.src = newUrl;
-} else if (typeof adv.map === 'string' && adv.map.startsWith('data:')) {
-    // Base64 (archivo JSON en disco o exportación antigua)
-    img.src = adv.map;
-    img._blobUrl = null;
-} else if (typeof adv.map === 'string' && adv.map.startsWith('http')) {
-    // URL externa
-    img.src = adv.map;
-    img._blobUrl = null;
 } else {
-    // Sin mapa
-    img.src = '';
-    img._blobUrl = null;
+    if (_prevMapUrl) { URL.revokeObjectURL(_prevMapUrl); img._blobUrl = null; }
+    img.src = adv.map; // compatibilidad con base64 antiguo
 };document.getElementById('mainMenu').classList.add('hidden');document.getElementById('createMenu').classList.remove('open');document.getElementById('advSubMenu').classList.remove('open');document.getElementById('appContainer').classList.add('open');setMode('design');renderRooms();renderSidebar();await initLightState();loadLightSources();loadShortEncounterCounter();updateDesignProgressUI();updateGameProgressUI();document.querySelector('.top-bar')?.classList.remove('collapsed');document.getElementById('topbar-toggle').style.display='none';
 // Sidebar minimizado por defecto
 document.getElementById('sidebar').classList.add('closed');document.getElementById('sidebar-toggle').textContent='▶';
@@ -3254,10 +3053,10 @@ renderPcBar();};
     const fsApiAvailable = typeof window.showOpenFilePicker === 'function' &&
                            typeof window.showSaveFilePicker === 'function';
     if(fsApiAvailable){
+        // PC con soporte FS — intentar cargar archivo de datos del disco
         const fsLoaded = await FS.init();
         if(!fsLoaded){
-            // Mostrar bienvenida DESPUÉS del init, no dentro — evita que Edge bloquee el picker
-            setTimeout(()=>showFsWelcome(), 300);
+            await showFsWelcome();
         }
     } else {
         // Móvil/WebView/iOS — usar IndexedDB directamente, sin preguntar
@@ -3280,85 +3079,59 @@ renderPcBar();};
     showToast('⚠️ Error de almacenamiento: '+e.message, 'error', 8000);
 }})();
 
-// ===== PANTALLA BIENVENIDA FS =====
-// Se muestra DESPUÉS del init, con botón conectado directamente al picker sin cadena async
-function showFsWelcome(){
-    const overlay=document.createElement('div');
-    overlay.id='fsWelcomeOverlay';
-    overlay.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,0.97);z-index:99999;display:flex;align-items:center;justify-content:center;padding:20px;';
-    overlay.innerHTML=`
-    <div style="background:var(--panel);border:2px solid var(--acc);border-radius:16px;padding:28px;max-width:380px;width:100%;text-align:center;">
-        <div style="font-size:48px;margin-bottom:12px;">🗺️</div>
-        <h2 style="color:var(--acc);margin:0 0 8px;">Campañas Dragonbane</h2>
-        <p style="color:var(--txt-secondary);font-size:13px;margin:0 0 20px;line-height:1.6;">Para guardar tus datos en disco, selecciona un archivo <strong style="color:var(--txt)">.json</strong> donde guardar.</p>
-        <p style="color:var(--txt-secondary);font-size:11px;margin:0 0 20px;line-height:1.5;background:var(--input-bg);padding:10px;border-radius:8px;">💡 Si no tienes el archivo aún, crea uno vacío desde el explorador de Windows:<br><strong style="color:var(--txt)">Clic derecho → Nuevo → Documento de texto → renómbralo a datos.json</strong></p>
-        <div style="display:flex;flex-direction:column;gap:10px;">
-            <button id="fsBtnNew" style="padding:14px;background:var(--acc);color:#000;border:none;border-radius:10px;cursor:pointer;font-weight:700;font-size:15px;">📂 Seleccionar archivo .json</button>
-            <button id="fsBtnSkip" style="padding:10px;background:transparent;border:none;color:var(--txt-secondary);cursor:pointer;font-size:12px;">Continuar sin guardar en disco</button>
-        </div>
-    </div>`;
-    document.body.appendChild(overlay);
-
-    // Conexión DIRECTA entre el click y el picker — sin ninguna async chain antes
-    document.getElementById('fsBtnNew').onclick = async function(){
-        try{
-            const [handle] = await window.showOpenFilePicker({
-                types:[{description:'Datos JSON',accept:{'application/json':['.json']}}],
-                multiple:false
-            });
-            await FS._setHandle(handle);
+async function showFsWelcome(){
+    return new Promise(resolve=>{
+        const overlay=document.createElement('div');
+        overlay.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,0.97);z-index:99999;display:flex;align-items:center;justify-content:center;padding:20px;';
+        overlay.innerHTML=`
+        <div style="background:var(--panel);border:2px solid var(--acc);border-radius:16px;padding:28px;max-width:380px;width:100%;text-align:center;">
+            <div style="font-size:48px;margin-bottom:12px;">🗺️</div>
+            <h2 style="color:var(--acc);margin:0 0 8px;">Campañas Dragonbane</h2>
+            <p style="color:var(--txt-secondary);font-size:13px;margin:0 0 24px;line-height:1.6;">Para que tus datos se guarden <strong style="color:var(--txt)">en tu disco</strong> y no se pierdan al cerrar el navegador, necesitas elegir dónde guardar.</p>
+            <div style="display:flex;flex-direction:column;gap:10px;">
+                <button id="fsNew" style="padding:14px;background:var(--acc);color:#000;border:none;border-radius:10px;cursor:pointer;font-weight:700;font-size:15px;">📄 Crear nuevo archivo de datos</button>
+                <button id="fsOpen" style="padding:14px;background:transparent;border:1px solid var(--acc);color:var(--acc);border-radius:10px;cursor:pointer;font-weight:600;font-size:14px;">📂 Abrir archivo existente</button>
+                <button id="fsSkip" style="padding:10px;background:transparent;border:none;color:var(--txt-secondary);cursor:pointer;font-size:12px;">Continuar sin guardar en disco (los datos se perderán al cerrar)</button>
+            </div>
+        </div>`;
+        document.body.appendChild(overlay);
+        document.getElementById('fsNew').addEventListener('click',async()=>{
+            const ok=await FS.createFile();
             document.body.removeChild(overlay);
-            showToast('✅ Archivo configurado. Los datos se guardarán automáticamente.');
-            // Recargar datos si el archivo tenía contenido
-            await loadAdvsCache();
-            await loadCampaigns();
-            renderAdvList();
-            updateFileIndicator(handle.name, true);
-        }catch(e){
-            if(e.name!=='AbortError'){
-                showToast('❌ Error: '+e.message,'error',4000);
-            }
-        }
-    };
-
-    document.getElementById('fsBtnSkip').onclick = function(){
-        document.body.removeChild(overlay);
-        showToast('⚠️ Modo sin persistencia activo','warn',4000);
-    };
+            if(ok)showToast('✅ Archivo de datos creado. Tus datos se guardarán automáticamente.');
+            resolve();
+        });
+        document.getElementById('fsOpen').addEventListener('click',async()=>{
+            const ok=await FS.chooseFile();
+            document.body.removeChild(overlay);
+            if(ok)showToast('✅ Archivo cargado. Continuando con tus datos guardados.');
+            resolve();
+        });
+        document.getElementById('fsSkip').addEventListener('click',()=>{
+            document.body.removeChild(overlay);
+            showToast('⚠️ Modo sin persistencia: los datos se perderán al cerrar.','warn',5000);
+            resolve();
+        });
+    });
 }
 
-window.changeDataFile=function(){
+window.changeDataFile=async function(){
     const overlay=document.createElement('div');
     overlay.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,0.9);z-index:99999;display:flex;align-items:center;justify-content:center;padding:20px;';
     overlay.innerHTML=`
     <div style="background:var(--panel);border:2px solid var(--acc);border-radius:16px;padding:24px;max-width:340px;width:100%;text-align:center;">
-        <h3 style="color:var(--acc);margin:0 0 12px;">📂 Archivo de datos</h3>
-        <p style="color:var(--txt-secondary);font-size:12px;margin:0 0 16px;line-height:1.5;">Selecciona el archivo .json donde guardar tus datos.</p>
+        <h3 style="color:var(--acc);margin:0 0 16px;">📂 Archivo de datos</h3>
         <div style="display:flex;flex-direction:column;gap:10px;">
-            <button id="cdfOpen" style="padding:12px;background:var(--acc);color:#000;border:none;border-radius:8px;cursor:pointer;font-weight:700;">📂 Seleccionar archivo</button>
+            <button id="cdfNew" style="padding:12px;background:var(--acc);color:#000;border:none;border-radius:8px;cursor:pointer;font-weight:700;">📄 Crear nuevo archivo</button>
+            <button id="cdfOpen" style="padding:12px;background:transparent;border:1px solid var(--acc);color:var(--acc);border-radius:8px;cursor:pointer;font-weight:600;">📂 Abrir archivo existente</button>
             <button id="cdfCancel" style="padding:10px;background:transparent;border:none;color:var(--txt-secondary);cursor:pointer;">Cancelar</button>
         </div>
     </div>`;
     document.body.appendChild(overlay);
-    const close=()=>{ if(overlay.parentNode)document.body.removeChild(overlay); };
-    document.getElementById('cdfOpen').onclick = async function(){
-        try{
-            const [handle] = await window.showOpenFilePicker({
-                types:[{description:'Datos JSON',accept:{'application/json':['.json']}}],
-                multiple:false
-            });
-            await FS._setHandle(handle);
-            close();
-            showToast('✅ Archivo configurado');
-            await loadAdvsCache();
-            await loadCampaigns();
-            renderAdvList();
-            updateFileIndicator(handle.name, true);
-        }catch(e){
-            if(e.name!=='AbortError') showToast('❌ Error: '+e.message,'error',4000);
-        }
-    };
-    document.getElementById('cdfCancel').onclick = close;
+    const close=()=>document.body.removeChild(overlay);
+    document.getElementById('cdfNew').addEventListener('click',async()=>{close();const ok=await FS.createFile();if(ok){showToast('✅ Nuevo archivo creado');await loadAdvsCache();await loadCampaigns();renderAdvList();}});
+    document.getElementById('cdfOpen').addEventListener('click',async()=>{close();const ok=await FS.chooseFile();if(ok){showToast('✅ Archivo cargado');await loadAdvsCache();await loadCampaigns();renderAdvList();}});
+    document.getElementById('cdfCancel').addEventListener('click',close);
 };
 
 async function migrateLegacyData(){
@@ -4650,236 +4423,6 @@ document.addEventListener('keydown', function(e){
         undo();
     }
 });
-
-// ===== INDICADOR DE ARCHIVO ACTIVO =====
-function updateFileIndicator(filename, saved){
-    const el=document.getElementById('fileIndicator');
-    if(!el)return;
-    if(!filename){el.textContent='💾 Sin archivo';el.className='';el.title='Sin archivo de datos configurado';return;}
-    const short=filename.length>20?filename.slice(0,17)+'...':filename;
-    el.textContent=(saved?'💾 ':'⚠️ ')+short;
-    el.className=saved?'saved':'unsaved';
-    const now=new Date();
-    el.title=filename+'\nÚltimo guardado: '+now.toLocaleTimeString('es',{hour:'2-digit',minute:'2-digit'});
-}
-// Parchear saveAdvToDB para actualizar el indicador
-const _origSaveAdvToDB=window.saveAdvToDB||saveAdvToDB;
-window.saveAdvToDB=async function(adv){
-    await _origSaveAdvToDB(adv);
-    const fname=FS.isReady()?(await FS._getFilename?.())||'datos.json':'IndexedDB';
-    updateFileIndicator(fname,true);
-};
-// Inicializar indicador al arrancar
-setTimeout(()=>{
-    if(FS.isReady()){updateFileIndicator('datos.json',true);}
-    else{updateFileIndicator(null,false);}
-},1500);
-
-// ===== BÚSQUEDA GLOBAL =====
-window.openGlobalSearch=function(){
-    if(!window.curId)return;
-    const modal=document.getElementById('globalSearchModal');
-    modal.classList.add('open');
-    const input=document.getElementById('globalSearchInput');
-    input.value='';
-    document.getElementById('globalSearchResults').innerHTML='<p style="color:var(--txt-secondary);text-align:center;padding:20px;font-size:13px;">Escribe para buscar en todas las salas, notas y reglas de esta aventura</p>';
-    setTimeout(()=>input.focus(),100);
-};
-window.closeGlobalSearch=function(){
-    document.getElementById('globalSearchModal').classList.remove('open');
-};
-window.runGlobalSearch=function(q){
-    const res=document.getElementById('globalSearchResults');
-    q=(q||'').trim().toLowerCase();
-    if(q.length<2){res.innerHTML='<p style="color:var(--txt-secondary);text-align:center;padding:16px;font-size:13px;">Escribe al menos 2 caracteres</p>';return;}
-    const normalize=s=>s.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');
-    const nq=normalize(q);
-    const results=[];
-    (window.rooms||[]).forEach(r=>{
-        const fields=[r.name||'',r.desc||'',...(r.djRows||[]).map(row=>row.text||row.content||''),...(r.markers||[]).map(m=>m.text||m.label||'')];
-        const combined=fields.join(' ');
-        if(normalize(combined).includes(nq)){
-            const snippet=fields.find(f=>normalize(f).includes(nq))||'';
-            const idx=normalize(snippet).indexOf(nq);
-            const preview=snippet.slice(Math.max(0,idx-30),idx+60).trim();
-            const typeIcon=r.type==='regla'?'📏':r.type==='nota'?'📌':'🚪';
-            results.push({id:r.id,name:r.name,type:typeIcon,preview});
-        }
-    });
-    if(results.length===0){res.innerHTML='<p style="color:var(--txt-secondary);text-align:center;padding:16px;font-size:13px;">Sin resultados para "'+escapeHtml(q)+'"</p>';return;}
-    res.innerHTML='<div style="font-size:11px;color:var(--txt-secondary);padding:4px 8px;margin-bottom:4px;">'+results.length+' resultado/s</div>';
-    results.forEach(r=>{
-        const div=document.createElement('div');
-        div.className='gs-result';
-        div.innerHTML=`<div class="gs-result-type">${r.type} Sala</div><div class="gs-result-title">${escapeHtml(r.name)}</div>${r.preview?`<div class="gs-result-snippet">...${escapeHtml(r.preview)}...</div>`:''}`;
-        div.addEventListener('click',()=>{closeGlobalSearch();openRoomEditor(r.id);});
-        res.appendChild(div);
-    });
-};
-document.addEventListener('keydown',e=>{
-    if((e.ctrlKey||e.metaKey)&&e.key==='f'&&window.curId){e.preventDefault();openGlobalSearch();}
-    if(e.key==='Escape'){closeGlobalSearch();closeWeatherPanel();toggleQuickNote(true);}
-});
-document.getElementById('globalSearchModal').addEventListener('click',e=>{if(e.target===document.getElementById('globalSearchModal'))closeGlobalSearch();});
-
-// ===== NOTAS RÁPIDAS =====
-let _quickNotes=[];
-window.toggleQuickNote=function(forceClose=false){
-    const btn=document.getElementById('quickNoteBtn');
-    const panel=document.getElementById('quickNotePanel');
-    if(forceClose){panel.classList.remove('open');return;}
-    panel.classList.toggle('open');
-    if(panel.classList.contains('open')){renderQuickNotes();setTimeout(()=>document.getElementById('quickNoteInput').focus(),100);}
-};
-window.saveQuickNote=function(){
-    const input=document.getElementById('quickNoteInput');
-    const text=(input.value||'').trim();
-    if(!text)return;
-    _quickNotes.unshift({text,time:new Date().toLocaleTimeString('es',{hour:'2-digit',minute:'2-digit'}),id:Date.now()});
-    if(_quickNotes.length>50)_quickNotes.pop();
-    input.value='';
-    renderQuickNotes();
-    // Guardar en sesión de aventura
-    const adv=window.advs.find(a=>a.id===window.curId);
-    if(adv){adv.quickNotes=_quickNotes;saveCurrent();}
-};
-window.clearQuickNotes=function(){
-    if(!confirm('¿Borrar todas las notas rápidas?'))return;
-    _quickNotes=[];
-    renderQuickNotes();
-    const adv=window.advs.find(a=>a.id===window.curId);
-    if(adv){adv.quickNotes=[];saveCurrent();}
-};
-function renderQuickNotes(){
-    const list=document.getElementById('quickNoteList');
-    if(_quickNotes.length===0){list.innerHTML='<p style="color:var(--txt-secondary);font-size:12px;text-align:center;padding:8px;">Sin notas</p>';return;}
-    list.innerHTML='';
-    _quickNotes.forEach((n,i)=>{
-        const div=document.createElement('div');
-        div.className='qn-item';
-        div.innerHTML=`<div style="flex:1;"><div style="font-size:12px;">${escapeHtml(n.text)}</div><div class="qn-time">${n.time}</div></div><button onclick="deleteQuickNote(${i})" style="background:none;border:none;color:var(--txt-secondary);cursor:pointer;font-size:14px;padding:0 2px;">✕</button>`;
-        list.appendChild(div);
-    });
-}
-window.deleteQuickNote=function(i){
-    _quickNotes.splice(i,1);
-    renderQuickNotes();
-    const adv=window.advs.find(a=>a.id===window.curId);
-    if(adv){adv.quickNotes=_quickNotes;saveCurrent();}
-};
-// Añadir nota con Enter
-document.getElementById('quickNoteInput').addEventListener('keydown',e=>{
-    if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();saveQuickNote();}
-});
-// Cargar notas al entrar en aventura
-const _origLoadAdv=window.loadAdv;
-window.loadAdv=async function(id){
-    await _origLoadAdv(id);
-    const adv=window.advs.find(a=>a.id===id);
-    _quickNotes=adv?.quickNotes||[];
-    // Mostrar botón de notas rápidas solo en modo juego
-    updateQuickNoteBtn();
-};
-
-function updateQuickNoteBtn(){
-    const btn=document.getElementById('quickNoteBtn');
-    if(btn)btn.style.display=window.mode==='game'?'flex':'none';
-}
-
-// ===== TIMER DE SESIÓN =====
-let _timerInterval=null;
-let _timerSeconds=0;
-let _timerRunning=false;
-
-window.toggleTimer=function(){
-    const widget=document.getElementById('timerWidget');
-    if(widget.style.display==='none'||!widget.style.display){
-        widget.style.display='block';
-        startTimer();
-        toggleHamburgerMenu();
-    }else{
-        widget.style.display='none';
-        pauseTimer();
-    }
-};
-function startTimer(){
-    if(_timerRunning)return;
-    _timerRunning=true;
-    document.getElementById('timerWidget').className='running';
-    _timerInterval=setInterval(()=>{
-        _timerSeconds++;
-        updateTimerDisplay();
-    },1000);
-}
-function pauseTimer(){
-    _timerRunning=false;
-    clearInterval(_timerInterval);
-    _timerInterval=null;
-    document.getElementById('timerWidget').className='paused';
-}
-window.toggleTimerPause=function(){
-    if(_timerRunning)pauseTimer(); else startTimer();
-};
-window.resetTimer=function(){
-    pauseTimer();
-    _timerSeconds=0;
-    updateTimerDisplay();
-    startTimer();
-};
-function updateTimerDisplay(){
-    const h=Math.floor(_timerSeconds/3600);
-    const m=Math.floor((_timerSeconds%3600)/60);
-    const s=_timerSeconds%60;
-    const txt=h>0?`⏱️ ${h}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`:`⏱️ ${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
-    document.getElementById('timerWidget').textContent=txt;
-}
-
-// ===== PANEL CLIMA/AMBIENTE =====
-let _weather={temp:null,prec:null,time:null,env:null,note:''};
-window.openWeatherPanel=function(){
-    document.getElementById('weatherPanel').classList.add('open');
-    // Restaurar selecciones actuales
-    document.querySelectorAll('.weather-btn').forEach(btn=>{
-        const cat=btn.dataset.cat;
-        const val=btn.querySelector('.wi').nextSibling?.textContent?.trim();
-        const fullVal=btn.querySelector('.wi').textContent+' '+val;
-        btn.classList.toggle('active',_weather[cat]&&_weather[cat].includes(val));
-    });
-    document.getElementById('weatherNote').value=_weather.note||'';
-    toggleHamburgerMenu();
-};
-window.closeWeatherPanel=function(){document.getElementById('weatherPanel').classList.remove('open');};
-window.setWeather=function(cat,val){
-    _weather[cat]=val;
-    // Actualizar botones activos
-    document.querySelectorAll(`.weather-btn[data-cat="${cat}"]`).forEach(btn=>{
-        const btnVal=btn.querySelector('.wi').textContent+' '+btn.textContent.replace(btn.querySelector('.wi').textContent,'').trim();
-        btn.classList.toggle('active',val&&btnVal.includes(val.replace(/^[^\s]+\s/,'')));
-    });
-    updateWeatherDisplay();
-};
-window.clearWeather=function(){
-    _weather={temp:null,prec:null,time:null,env:null,note:''};
-    document.querySelectorAll('.weather-btn').forEach(b=>b.classList.remove('active'));
-    document.getElementById('weatherNote').value='';
-    updateWeatherDisplay();
-};
-window.updateWeatherDisplay=function(){
-    _weather.note=document.getElementById('weatherNote')?.value||'';
-    const parts=[_weather.time,_weather.prec,_weather.temp,_weather.env].filter(Boolean);
-    const disp=document.getElementById('weatherDisplay');
-    if(parts.length===0&&!_weather.note){disp.className='';return;}
-    const txt=parts.join(' · ')+(_weather.note?' · 🎭':' ');
-    disp.textContent=txt;
-    disp.className='visible';
-};
-
-// Actualizar botón de notas al cambiar de modo
-const _origSetMode=window.setMode;
-window.setMode=function(m){
-    _origSetMode(m);
-    updateQuickNoteBtn();
-};
 
 // ===== PWA: SERVICE WORKER =====
 if ('serviceWorker' in navigator) {
